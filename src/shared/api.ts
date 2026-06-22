@@ -1,18 +1,20 @@
 export type InitResponse = {
-  type: "init";
+  type: 'init';
   postId: string;
   money: number;
   username: string;
+  subreddit: string;
+  level: number;
 };
 
-export type IncrementResponse = {
-  type: "increment";
+export type NumberResponse = {
+  type: 'number';
   postId: string;
-  count: number;
+  num: number;
 };
 
-export type DecrementResponse = {
-  type: "decrement";
+export type JSONResponse = {
+  type: 'json';
   postId: string;
-  count: number;
+  response: Response;
 };

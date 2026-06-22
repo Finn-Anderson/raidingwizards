@@ -20,6 +20,9 @@ const config: Phaser.Types.Core.GameConfig = {
 		width: 1024,
 		height: 768,
 	},
+	dom: {
+		createContainer: true
+	},
 	scene: [Boot, Preloader, MainMenu, MainGame, GameOver],
 };
 

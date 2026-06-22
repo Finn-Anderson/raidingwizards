@@ -38,13 +38,17 @@ export class Preloader extends Scene {
         if (!response.ok) throw new Error(`API error: ${response.status}`);
 
         const data = (await response.json()) as InitResponse;
-        this.registry.set("money", data.money);
-		this.registry.set("username", data.username);
+        this.registry.set('money', data.money);
+        this.registry.set('level', data.level);
+		this.registry.set('username', data.username);
+		this.registry.set('subreddit', data.subreddit);
 
    		this.scene.start('MainMenu');
       } catch (error) {
-        this.registry.set("money", 0);
-        this.registry.set("username", undefined);
+        this.registry.set('money', 0);
+        this.registry.set('level', 0);
+        this.registry.set('username', undefined);
+        this.registry.set('subreddit', undefined);
         console.error('Failed to fetch initial count:', error);
 
    		this.scene.start('MainMenu');
