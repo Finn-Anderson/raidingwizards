@@ -13,8 +13,14 @@ export type NumberResponse = {
   num: number;
 };
 
-export type JSONResponse = {
-  type: 'json';
+export type SubredditResponse = {
+  type: 'list';
   postId: string;
-  response: Response;
+  list: {member: string; score: number;}[];
+};
+
+export type LeaderboardResponse = {
+  type: 'list';
+  postId: string;
+  list: {rank: number; member: string; score: number;}[];
 };

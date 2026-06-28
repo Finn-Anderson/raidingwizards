@@ -17,14 +17,6 @@
 		"dir": "dist/server",
 		"entry": "index.cjs"
 	},
-	"permissions": {
-	"http": {
-		"enable": true,
-		"domains": [
-			"reddit.com"
-		]
-	}
-	},
 	"menu": {
 		"items": [
 			{

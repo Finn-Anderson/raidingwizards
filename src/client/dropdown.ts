@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser';
-import { NumberResponse, JSONResponse } from '../shared/api';
+import { NumberResponse, SubredditResponse } from '../shared/api';
 
 export class DropdownList {
 	scene: Phaser.Scene;
@@ -49,7 +49,6 @@ export class DropdownList {
 		});
 
 		this.element.addEventListener('input', async () => {
-			// this isn't working. Check serverside via console.log
 			try {
 				var payload = {
 					value: this.element.value,
@@ -57,7 +56,7 @@ export class DropdownList {
 				const data = JSON.stringify( payload );
 						
 				const response = await fetch('/api/getsubreddits', { 
-					method: 'GET',
+					method: 'POST',
 					headers: {
 						'Accept': 'application/json',
 						'Content-Type': 'application/json'
@@ -66,19 +65,19 @@ export class DropdownList {
 				});
 				if (!response.ok)
 					throw new Error(`Failed to fetch subreddits: ${response.status}`);
-				const responseData = (await response.json()) as JSONResponse;
+				const responseData = (await response.json()) as SubredditResponse;
 
-				const result = await responseData.response.json();
-				const children = result.data.children;
+				const result = await responseData.list;
 				this.container.innerHTML = '';
-				for (var i = 0; i < (children.length > 5 ? 5 : children.length); i++) {
+				for (var i = 0; i < (result.length > 5 ? 5 : result.length); i++) {
 					const button = document.createElement('button');
-					button.value = children[i].data.display_name_prefixed;
+					button.innerHTML = result.at(i)!.member + " - <span>" + result.at(i)!.score + "</span>";
+					button.value = result.at(i)!.member;
 					button.onclick = this.setSubreddit.bind(button, button.value);
 					this.container.appendChild(button);
 				}
 			} catch (error) {
-				console.error('Failed to search for subreddits:', error)
+				console.error('Failed to search for subreddits:', error);
 			}
 		});
 
@@ -94,8 +93,13 @@ export class DropdownList {
 	}
 
 	setSubreddit(value: string) {
+		if (!value.startsWith("r/") && !value.startsWith("u/"))
+			value = "r/" + value;
+
 		this.element.value = value;
 		this.container.innerHTML = '';
+
+		this.scene.registry.set('subreddit', value);
 
 		void (async () => {
 			try {
@@ -115,7 +119,7 @@ export class DropdownList {
 				});
 				if (!response.ok) throw new Error(`API error: ${response.status}`);
 				const responseData = (await response.json()) as NumberResponse;
-        this.scene.registry.set('level', responseData.num);
+       			this.scene.registry.set('level', responseData.num);
 			} catch (error) {
 				console.error('Failed to set subreddit:', error);
 			}
