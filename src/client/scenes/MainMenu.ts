@@ -1,5 +1,6 @@
 import { Scene, GameObjects } from 'phaser';
 import { DropdownList } from '../dropdown';
+import { Leaderboard } from '../leaderboard';
 
 export class MainMenu extends Scene {
 	background: GameObjects.Image | null = null;
@@ -8,6 +9,7 @@ export class MainMenu extends Scene {
 	moneyText: Phaser.GameObjects.Text;
 	levelText: Phaser.GameObjects.Text;
 	dropdown: DropdownList;
+	leaderboard: Leaderboard;
 
 	constructor() {
 		super('MainMenu');
@@ -56,6 +58,8 @@ export class MainMenu extends Scene {
 
 		if (this.registry.get('username') != 'anonymous')
 			this.dropdown = new DropdownList(this, width / 2, 16);
+
+		this.leaderboard = new Leaderboard(this, width - 16, 16);
 		
 		// Setup responsive layout
 		this.updateLayout(this.scale.width, this.scale.height);

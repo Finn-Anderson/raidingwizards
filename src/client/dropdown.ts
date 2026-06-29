@@ -3,8 +3,6 @@ import { NumberResponse, SubredditResponse } from '../shared/api';
 
 export class DropdownList {
 	scene: Phaser.Scene;
-	rectangle: Phaser.GameObjects.Rectangle;
-	focus: boolean = false;
 	element: HTMLInputElement;
 	container: HTMLDivElement;
 	domElement: Phaser.GameObjects.DOMElement
@@ -51,7 +49,7 @@ export class DropdownList {
 		this.element.addEventListener('input', async () => {
 			try {
 				var payload = {
-					value: this.element.value,
+					value: this.element.value.toLowerCase(),
 				};
 				const data = JSON.stringify( payload );
 						
@@ -65,6 +63,7 @@ export class DropdownList {
 				});
 				if (!response.ok)
 					throw new Error(`Failed to fetch subreddits: ${response.status}`);
+
 				const responseData = (await response.json()) as SubredditResponse;
 
 				const result = await responseData.list;
@@ -93,6 +92,7 @@ export class DropdownList {
 	}
 
 	setSubreddit(value: string) {
+		value.toLowerCase();
 		if (!value.startsWith("r/") && !value.startsWith("u/"))
 			value = "r/" + value;
 
@@ -118,6 +118,7 @@ export class DropdownList {
 					body: data 
 				});
 				if (!response.ok) throw new Error(`API error: ${response.status}`);
+				
 				const responseData = (await response.json()) as NumberResponse;
        			this.scene.registry.set('level', responseData.num);
 			} catch (error) {

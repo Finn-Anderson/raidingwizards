@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { context, redis, reddit, ZRangeOptions, List } from '@devvit/web/server';
+import { context, redis, reddit, ZRangeOptions } from '@devvit/web/server';
 import type { InitResponse, NumberResponse, SubredditResponse } from '../../shared/api';
 
 type ErrorResponse = {
@@ -29,14 +29,17 @@ api.get('/init', async (c) => {
 		var subreddit = undefined;
 		var level = undefined;
 
+		redis.del('leaderboard');
+
 		if (username != undefined) {
+			username.toLowerCase();
 			money = await redis.get(username + 'money');
 
 			subreddit = await redis.get(username + 'subreddit');
 			if (subreddit == undefined)
 				subreddit = "u/" + username;
 
-			level = await redis.hGet('leaderboard', subreddit);
+			level = await redis.zScore('leaderboard', subreddit);
 		}
 
 		return c.json<InitResponse>({
@@ -45,7 +48,7 @@ api.get('/init', async (c) => {
 			money: money ? parseInt(money) : 0,
 			username: username ?? 'anonymous',
 			subreddit: subreddit ?? 'anonymous',
-			level: level ? parseInt(level) : 0,
+			level: level ? level : 0,
 		});
 	} catch (error) {
 		console.error(`API Init Error for post ${postId}:`, error);
@@ -75,7 +78,7 @@ api.get('/leaderboard', async (c) => {
 
 		let options: ZRangeOptions = {
 			reverse: true,
-			by: "score",
+			by: 'score',
 			limit: {
 				offset: 0,
 				count: 5
@@ -107,7 +110,7 @@ api.get('/leaderboard', async (c) => {
 			list,
 		});
 	} catch (e) {
-		console.log("Request Body (not JSON or empty):", await c.req.text());
+		console.log('Leaderboard Error:', await c.req.text());
 	}
 });
 
@@ -130,13 +133,14 @@ api.post('/getsubreddits', async (c) => {
 
 		let options: ZRangeOptions = {
 			reverse: true,
-			by: "lex",
+			by: 'lex',
 			limit: {
 				offset: 0,
 				count: Infinity
 			}
 		};
 		const list: {member: string; score: number;}[] = await redis.zRange('leaderboard', "["+requestBody.value, "("+requestBody.value, options);
+		console.log(list);
 
 		return c.json<SubredditResponse>({
 			type: 'list',
@@ -144,7 +148,7 @@ api.post('/getsubreddits', async (c) => {
 			list,
 		});
 	} catch (e) {
-		console.log("Request Body (not JSON or empty):", await c.req.text());
+		console.log('Get Subreddits Error:', await c.req.text());
 	}
 });
 
@@ -167,7 +171,7 @@ api.post('/setmoney', async (c) => {
 			num,
 		});
 	} catch (e) {
-		console.log("Request Body (not JSON or empty):", await c.req.text());
+		console.log('Set Money Error:', await c.req.text());
 	}
 });
 
@@ -182,9 +186,10 @@ api.post('/setsubreddit', async (c) => {
 
 	try {
 		const requestBody = await c.req.raw.clone().json();
+		const subreddit = requestBody.subreddit;
 		if (requestBody.username != 'anonymous')
-			await redis.set(requestBody.username + 'subreddit', requestBody.subreddit);
-		const level = await redis.zScore('leaderboard', requestBody.subreddit);
+			await redis.set(requestBody.username + 'subreddit', subreddit);
+		const level = await redis.zScore('leaderboard', subreddit);
 		const num = level ? level : 0;
 		return c.json<NumberResponse>({
 			type: 'number',
@@ -192,7 +197,7 @@ api.post('/setsubreddit', async (c) => {
 			num,
 		});
 	} catch (e) {
-		console.log("Request Body (not JSON or empty):", await c.req.text());
+		console.log('Set Subreddit Error:', await c.req.text());
 	}
 });
 
@@ -214,6 +219,6 @@ api.post('/setlevel', async (c) => {
 			num,
 		});
 	} catch (e) {
-		console.log("Request Body (not JSON or empty):", await c.req.text());
+		console.log('Set Level Error:', await c.req.text());
 	}
 });
