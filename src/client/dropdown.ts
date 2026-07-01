@@ -4,23 +4,51 @@ import { NumberResponse, SubredditResponse } from '../shared/api';
 export class DropdownList {
 	scene: Phaser.Scene;
 	element: HTMLInputElement;
+	button: HTMLButtonElement;
 	container: HTMLDivElement;
 	domElement: Phaser.GameObjects.DOMElement
 
 	constructor(scene: Phaser.Scene, x: number, y: number) {
 		this.scene = scene;
+		const subreddit = this.scene.registry.get('subreddit');
 
 		const div = document.createElement('div');
+
+		const inputDiv = document.createElement('div');
+		inputDiv.id = 'div-input';
+
+		this.button = document.createElement('button');
+		this.button.innerHTML = subreddit ? subreddit.substring(0, 2) : "r/";
+		this.button.onclick = () => {
+			if (this.button.innerHTML == "r/")
+				this.button.innerHTML = "u/";
+			else
+				this.button.innerHTML = "r/";
+
+			this.GetSubreddits();
+		};
+		inputDiv.appendChild(this.button);
+
 		this.element = document.createElement('input');
-		this.element.value = this.scene.registry.get('subreddit');
-		div.appendChild(this.element);
+		this.element.value = subreddit.slice(2);
+		inputDiv.appendChild(this.element);
+
+		div.appendChild(inputDiv);
 
 		this.container = document.createElement('div');
 		div.appendChild(this.container);
 
-		this.domElement = this.scene.add.dom(x, y, div);
+		if (this.scene.registry.get('username') == 'anonymous') {
+			this.element.title = "Login to assign score to a user/subreddit";
+			this.element.disabled = true;
+			this.button.disabled = true;
+		}
+		else {
+			this.element.title = "Define user/subreddit to assign score to";
+			this.defineInteractions();
+		}
 
-		this.defineInteractions();
+		this.domElement = this.scene.add.dom(x, y, div).setOrigin(0);
 	}
 
 	defineInteractions() {
@@ -29,14 +57,14 @@ export class DropdownList {
 				return;
 
 			if (this.element.value == "") {
-				this.setSubreddit("u/" + this.scene.registry.get('username'));
+				this.setSubreddit(this.button.innerHTML + this.scene.registry.get('username'));
 			}
 			else {
 				const list = [...this.container.children];
 				for (const item of list) {
 					const value = item.getAttribute('value');
 
-					if (value != this.element.value && value?.split("r/").pop() != this.element.value)
+					if (value != this.button.innerHTML + this.element.value)
 						continue;
 
 					this.setSubreddit(value);
@@ -46,38 +74,8 @@ export class DropdownList {
 			}
 		});
 
-		this.element.addEventListener('input', async () => {
-			try {
-				var payload = {
-					value: this.element.value.toLowerCase(),
-				};
-				const data = JSON.stringify( payload );
-						
-				const response = await fetch('/api/getsubreddits', { 
-					method: 'POST',
-					headers: {
-						'Accept': 'application/json',
-						'Content-Type': 'application/json'
-					},
-					body: data 
-				});
-				if (!response.ok)
-					throw new Error(`Failed to fetch subreddits: ${response.status}`);
-
-				const responseData = (await response.json()) as SubredditResponse;
-
-				const result = await responseData.list;
-				this.container.innerHTML = '';
-				for (var i = 0; i < (result.length > 5 ? 5 : result.length); i++) {
-					const button = document.createElement('button');
-					button.innerHTML = result.at(i)!.member + " - <span>" + result.at(i)!.score + "</span>";
-					button.value = result.at(i)!.member;
-					button.onclick = this.setSubreddit.bind(button, button.value);
-					this.container.appendChild(button);
-				}
-			} catch (error) {
-				console.error('Failed to search for subreddits:', error);
-			}
+		this.element.addEventListener('input', () => {
+			this.GetSubreddits();
 		});
 
 		document.addEventListener('click', (event) => {
@@ -86,17 +84,62 @@ export class DropdownList {
 		});
 	}
 
+	async GetSubreddits() {
+		this.element.value = this.element.value.toLowerCase();
+		const value = this.button.innerHTML + this.element.value;
+		try {
+			var payload = {
+				value: value
+			};
+			const data = JSON.stringify( payload );
+					
+			const response = await fetch('/api/getsubreddits', { 
+				method: 'POST',
+				headers: {
+					'Accept': 'application/json',
+					'Content-Type': 'application/json'
+				},
+				body: data 
+			});
+			if (!response.ok)
+				throw new Error(`Failed to fetch subreddits: ${response.status}`);
+
+			const responseData = (await response.json()) as SubredditResponse;
+			const result = await responseData.list;
+
+			this.container.innerHTML = '';
+			let bContainsSubreddit = false;
+
+			for (var i = 0; i < (result.length > 5 ? 5 : result.length); i++) {
+				const button = document.createElement('button');
+				button.innerHTML = result.at(i)!.member + ' - <span id="score">' + result.at(i)!.score + '</span>';
+				button.value = result.at(i)!.member;
+				button.onclick = this.setSubreddit.bind(button, button.value);
+				this.container.appendChild(button);
+
+				if (this.element.value == result.at(i)!.member.slice(2))
+					bContainsSubreddit = true;
+			}
+
+			if (bContainsSubreddit)
+				return;
+
+			const button = document.createElement('button');
+			button.innerHTML = 'Add new';
+			button.value = value;
+			button.onclick = this.setSubreddit.bind(button, button.value);
+			this.container.appendChild(button);
+		} catch (error) {
+			console.error('Failed to search for subreddits:', error);
+		}
+	}
+
 	updateLayout(w: number, h: number, scale: number) {
 		this.domElement.setPosition(w, h);
 		this.domElement.setScale(scale);
 	}
 
 	setSubreddit(value: string) {
-		value.toLowerCase();
-		if (!value.startsWith("r/") && !value.startsWith("u/"))
-			value = "r/" + value;
-
-		this.element.value = value;
 		this.container.innerHTML = '';
 
 		this.scene.registry.set('subreddit', value);

@@ -24,7 +24,7 @@ api.get('/init', async (c) => {
 	}
 
 	try {
-		const username = await reddit.getCurrentUsername();
+		const username = (await reddit.getCurrentUsername())?.toLowerCase();
 		var money = undefined; 
 		var subreddit = undefined;
 		var level = undefined;
@@ -32,7 +32,6 @@ api.get('/init', async (c) => {
 		redis.del('leaderboard');
 
 		if (username != undefined) {
-			username.toLowerCase();
 			money = await redis.get(username + 'money');
 
 			subreddit = await redis.get(username + 'subreddit');
@@ -140,7 +139,6 @@ api.post('/getsubreddits', async (c) => {
 			}
 		};
 		const list: {member: string; score: number;}[] = await redis.zRange('leaderboard', "["+requestBody.value, "("+requestBody.value, options);
-		console.log(list);
 
 		return c.json<SubredditResponse>({
 			type: 'list',

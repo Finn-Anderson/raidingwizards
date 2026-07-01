@@ -18,6 +18,7 @@ export class Leaderboard {
 						this.table = document.createElement('table');
 
 						const trHeader = document.createElement('tr');
+						trHeader.id = 'table-header'
 
 						const th = document.createElement('th');
 						th.colSpan = 3;
@@ -46,7 +47,15 @@ export class Leaderboard {
 				console.error('Failed to get leaderboard:', error);
 			}
 
-			this.domElement = scene.add.dom(x, y, this.table);
+			this.domElement = scene.add.dom(x, y, this.table).setOrigin(1, 0);
 		}
+	}
+
+	updateLayout(w: number, h: number, scale: number) {
+		if (!this.domElement)
+			return;
+
+		this.domElement.setPosition(w, h);
+		this.domElement.setScale(scale);
 	}
 }

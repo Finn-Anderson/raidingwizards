@@ -39,27 +39,28 @@ export class MainMenu extends Scene {
 			.on('pointerup', () => { this.scene.start('Game'); });
 
 		this.moneyText = this.add
-			.text(4, 4, `${this.registry.get('money')}`, {
+			.text(4, 4, `Money: ${this.registry.get('money')}`, {
 				fontFamily: '"Kristen ITC", arial, serif',
-				fontSize: 56,
+				fontSize: 48,
 				color: '#ffd700',
 				stroke: '#e6c200',
 				strokeThickness: 2,
 			})
+			.setOrigin(0);
 
 		this.levelText = this.add
-			.text(4, 4, `${this.registry.get('level')}`, {
+			.text(4, 4, `Level: ${this.registry.get('level')}`, {
 				fontFamily: '"Kristen ITC", arial, serif',
-				fontSize: 56,
+				fontSize: 48,
 				color: '#29FF00',
 				stroke: '#25e600',
 				strokeThickness: 2,
 			})
+			.setOrigin(0);
 
-		if (this.registry.get('username') != 'anonymous')
-			this.dropdown = new DropdownList(this, width / 2, 16);
+		this.dropdown = new DropdownList(this, 8, 8);
 
-		this.leaderboard = new Leaderboard(this, width - 16, 16);
+		this.leaderboard = new Leaderboard(this, width - 8, 8);
 		
 		// Setup responsive layout
 		this.updateLayout(this.scale.width, this.scale.height);
@@ -88,15 +89,17 @@ export class MainMenu extends Scene {
 		}
 
 		if (this.moneyText) {
-			this.moneyText.setPosition(8 * scaleFactor, 8 * scaleFactor);
+			this.moneyText.setPosition(8 * scaleFactor, 80 * scaleFactor);
 			this.moneyText.setScale(scaleFactor);
 		}
 
 		if (this.levelText) {
-			this.levelText.setPosition(8 * scaleFactor, 64 * scaleFactor);
+			this.levelText.setPosition(8 * scaleFactor, 136 * scaleFactor);
 			this.levelText.setScale(scaleFactor);
 		}
 
-		this.dropdown.updateLayout(width / 2, 16, scaleFactor);
+		this.dropdown.updateLayout(8 * scaleFactor, 8 * scaleFactor, scaleFactor);
+
+		this.leaderboard.updateLayout(width - 8 * scaleFactor, 8 * scaleFactor, scaleFactor);
 	}
 }
