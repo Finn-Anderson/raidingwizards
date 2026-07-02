@@ -102,4 +102,12 @@ export class MainMenu extends Scene {
 
 		this.leaderboard.updateLayout(width - 8 * scaleFactor, 8 * scaleFactor, scaleFactor);
 	}
+
+ 	updateLevelText() {
+		this.levelText.setText(`Level: ${this.registry.get('level')}`);
+  	}
+
+	updateLeaderboardText() {
+		this.leaderboard.refreshLeaderboard(this, this.leaderboard.domElement.x, this.leaderboard.domElement.y);
+	}
 }

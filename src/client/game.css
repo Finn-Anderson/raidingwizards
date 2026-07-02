@@ -38,6 +38,7 @@ body {
 }
 
 #div-input input {
+	width: 400px;
 	border-left: none;
     border-radius: 0px 4px 4px 0px;
 }
@@ -59,6 +60,13 @@ button:hover {
 	background-color: #e64e00;
 }
 
+.dropdown-button {
+	display: block;
+	width: 100%;
+	border: 2px solid #444444;
+	border-radius: 4px;
+}
+
 input:focus-visible {
 	outline: 2px solid #ff5700;
 }
@@ -69,17 +77,40 @@ input:focus-visible {
 
 table {
 	float: right;
+	font-size: 48px;
+	font-family: 'Kristen ITC', arial, serif;
+	border-collapse: collapse;
+}
+
+tr {
+	border-left: 2px solid #121212;
+	border-right: 2px solid #121212;
 }
 
 tr:nth-child(odd) {
-	background-color: #121212;
+	background-color: #333333;
 }
 
 tr:nth-child(even) {
-	background-color: #333333;
+	background-color: #444444;
+}
+
+tr:last-child {
+	border-bottom: 2px solid #121212;
+}
+
+td:not(:first-child):not(:last-child) {
+	border-left: 1px solid #121212;
+	border-right: 1px solid #121212;
 }
 
 #table-header {
 	background-color: #ff5700;
 	color: #ffffff;
+	border: 2px solid #e64e00;
+	border-bottom: none;
+}
+
+td {
+	padding: 0px 8px;
 }

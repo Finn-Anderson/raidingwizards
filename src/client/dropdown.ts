@@ -1,14 +1,15 @@
 import * as Phaser from 'phaser';
 import { NumberResponse, SubredditResponse } from '../shared/api';
+import { MainMenu } from './scenes/MainMenu';
 
 export class DropdownList {
-	scene: Phaser.Scene;
+	scene: MainMenu;
 	element: HTMLInputElement;
 	button: HTMLButtonElement;
 	container: HTMLDivElement;
 	domElement: Phaser.GameObjects.DOMElement
 
-	constructor(scene: Phaser.Scene, x: number, y: number) {
+	constructor(scene: MainMenu, x: number, y: number) {
 		this.scene = scene;
 		const subreddit = this.scene.registry.get('subreddit');
 
@@ -31,6 +32,7 @@ export class DropdownList {
 
 		this.element = document.createElement('input');
 		this.element.value = subreddit.slice(2);
+		this.element.maxLength = 21;
 		inputDiv.appendChild(this.element);
 
 		div.appendChild(inputDiv);
@@ -79,8 +81,10 @@ export class DropdownList {
 		});
 
 		document.addEventListener('click', (event) => {
-			if (event.target != this.element)
+			if (event.target != this.element) {
 				this.element.blur();
+				this.container.innerHTML = '';
+			}
 		});
 	}
 
@@ -112,6 +116,7 @@ export class DropdownList {
 
 			for (var i = 0; i < (result.length > 5 ? 5 : result.length); i++) {
 				const button = document.createElement('button');
+				button.classList.add('dropdown-button');
 				button.innerHTML = result.at(i)!.member + ' - <span id="score">' + result.at(i)!.score + '</span>';
 				button.value = result.at(i)!.member;
 				button.onclick = this.setSubreddit.bind(button, button.value);
@@ -125,6 +130,7 @@ export class DropdownList {
 				return;
 
 			const button = document.createElement('button');
+			button.classList.add('dropdown-button');
 			button.innerHTML = 'Add new';
 			button.value = value;
 			button.onclick = this.setSubreddit.bind(button, button.value);
@@ -164,6 +170,8 @@ export class DropdownList {
 				
 				const responseData = (await response.json()) as NumberResponse;
        			this.scene.registry.set('level', responseData.num);
+				this.scene.updateLevelText();
+				this.scene.updateLeaderboardText();
 			} catch (error) {
 				console.error('Failed to set subreddit:', error);
 			}

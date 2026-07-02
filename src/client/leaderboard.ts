@@ -6,49 +6,71 @@ export class Leaderboard {
 	domElement: Phaser.GameObjects.DOMElement
 
 	constructor(scene: Phaser.Scene, x: number, y: number) {
-		async () => {
-			try {
-				const response = await fetch('/api/leaderboard');
-				if (!response.ok)
-					throw new Error(`Failed to fetch subreddits: ${response.status}`);
+		this.refreshLeaderboard(scene, x, y);
+	}
 
-				const responseData = (await response.json()) as LeaderboardResponse;
-				responseData.list.forEach((row, index) => {
-					if (index == 0) {
-						this.table = document.createElement('table');
+	async refreshLeaderboard(scene: Phaser.Scene, x: number, y: number) {
+		if (this.domElement)
+			this.domElement.destroy();
 
-						const trHeader = document.createElement('tr');
-						trHeader.id = 'table-header'
+		try {
+			var payload = {
+				subreddit: scene.registry.get('subreddit')
+			};
+			const data = JSON.stringify( payload );
+					
+			const response = await fetch('/api/leaderboard', { 
+				method: 'POST',
+				headers: {
+					'Accept': 'application/json',
+					'Content-Type': 'application/json'
+				},
+				body: data 
+			});
+			if (!response.ok)
+				throw new Error(`Failed to fetch leaderboard: ${response.status}`);
 
-						const th = document.createElement('th');
-						th.colSpan = 3;
-						trHeader.appendChild(th);
+			const responseData = (await response.json()) as LeaderboardResponse;
+			responseData.list.forEach((row, index) => {
+				if (index == 0) {
+					this.table = document.createElement('table');
 
-						this.table.appendChild(trHeader);
-					}
+					const trHeader = document.createElement('tr');
+					trHeader.id = 'table-header'
 
-					const tr = document.createElement('tr');
+					const th = document.createElement('th');
+					th.innerHTML = 'Leaderboard';
+					th.colSpan = 3;
+					trHeader.appendChild(th);
 
-					const tdRank = document.createElement('td');
-					tdRank.innerHTML = row.rank.toString();
-					tr.appendChild(tdRank);
+					this.table.appendChild(trHeader);
+				}
 
-					const tdSubreddit = document.createElement('td');
-					tdSubreddit.innerHTML = row.member.toString();
-					tr.appendChild(tdSubreddit);
+				const tr = document.createElement('tr');
 
-					const tdLevel = document.createElement('td');
-					tdLevel.innerHTML = row.score.toString();
-					tr.appendChild(tdLevel);
+				const tdRank = document.createElement('td');
+				tdRank.innerHTML = row.rank.toString();
+				if (row.member == scene.registry.get('subreddit'))
+					tdRank.id = 'subreddit';
+				tr.appendChild(tdRank);
 
-					this.table.appendChild(tr);
-				});
-			} catch (error) {
-				console.error('Failed to get leaderboard:', error);
-			}
+				const tdSubreddit = document.createElement('td');
+				tdSubreddit.innerHTML = row.member;
+				tr.appendChild(tdSubreddit);
 
-			this.domElement = scene.add.dom(x, y, this.table).setOrigin(1, 0);
+				const tdLevel = document.createElement('td');
+				tdLevel.innerHTML = row.score.toString();
+				tr.appendChild(tdLevel);
+
+				this.table.appendChild(tr);
+			});
+		} catch (error) {
+			console.error('Failed to get leaderboard:', error);
 		}
+
+		this.domElement = scene.add.dom(x, y, this.table).setOrigin(1, 0);
+		const scaleFactor = Math.min(Math.min(scene.scale.width / 1024, scene.scale.height / 768), 1);
+		this.updateLayout(scene.scale.width - 8 * scaleFactor, 8 * scaleFactor, scaleFactor)
 	}
 
 	updateLayout(w: number, h: number, scale: number) {

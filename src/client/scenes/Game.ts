@@ -14,7 +14,7 @@ export class Game extends Scene {
 		super('Game');
 	}
 
-  create() {
+  	create() {
 		this.camera = this.cameras.main;
 
 		this.background = this.add.image(0, 0, 'background').setOrigin(0);
@@ -26,9 +26,9 @@ export class Game extends Scene {
 		* ------------------------------------------- */
 
 		this.damageText = this.add
-			.text(4, 4, `${this.registry.get('damage')}`, {
+			.text(4, 4, `Damage: ${this.registry.get('damage')}`, {
 				fontFamily: '"Kristen ITC", arial, serif',
-				fontSize: 24,
+				fontSize: 48,
 				color: '#ff0029',
 				stroke: '#e60025',
 				strokeThickness: 2,
@@ -71,13 +71,13 @@ export class Game extends Scene {
 			const { width, height } = gameSize;
 			this.updateLayout(width, height);
 		});
-  }
+  	}
 
-  updateLayout(width: number, height: number) {
+  	updateLayout(width: number, height: number) {
 		this.cameras.resize(width, height);
 
-    if (this.background)
-      this.background.setDisplaySize(width, height);
+    	if (this.background)
+      		this.background.setDisplaySize(width, height);
 
 		const scaleFactor = Math.min(Math.min(width / 1024, height / 768), 1);
 
@@ -100,9 +100,9 @@ export class Game extends Scene {
 			this.goButton.setPosition(width / 2, height * 0.75);
 			this.goButton.setScale(scaleFactor);
 		}
-  }
+  	}
 
-  updateDamageText() {
-		this.damageText.setText(`Money: ${this.registry.get('damage')}`);
-  }
+ 	updateDamageText() {
+		this.damageText.setText(`Damage: ${this.registry.get('damage')}`);
+  	}
 }

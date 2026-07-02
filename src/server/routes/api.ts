@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { context, redis, reddit, ZRangeOptions } from '@devvit/web/server';
-import type { InitResponse, NumberResponse, SubredditResponse } from '../../shared/api';
+import type { InitResponse, NumberResponse, SubredditResponse, LeaderboardResponse } from '../../shared/api';
 
 type ErrorResponse = {
 	status: 'error';
@@ -29,7 +29,7 @@ api.get('/init', async (c) => {
 		var subreddit = undefined;
 		var level = undefined;
 
-		redis.del('leaderboard');
+		//redis.del('leaderboard');
 
 		if (username != undefined) {
 			money = await redis.get(username + 'money');
@@ -58,7 +58,7 @@ api.get('/init', async (c) => {
 	}
 });
 
-api.get('/leaderboard', async (c) => {
+api.post('/leaderboard', async (c) => {
 	const { postId } = context;
 
 	if (!postId) {
@@ -83,27 +83,27 @@ api.get('/leaderboard', async (c) => {
 				count: 5
 			}
 		};
-		const list: {member: string; score: number;}[] = await redis.zRange('leaderboard', 0, Infinity, options);
+		const range: {member: string, score: number}[] = await redis.zRange('leaderboard', 0, Infinity, options);
 
 		var bContainsSubreddit = false;
-		let leaderboard: {rank: number; member: string; score: number;}[] = [];
-		list.forEach((element, index) => {
-			leaderboard.push({rank: index, member: element.member, score: element.score});
+		let list: {rank: number, member: string, score: number}[] = [];
+		range.forEach((element, index) => {
+			list.push({rank: index, member: element.member, score: element.score});
 
 			if (element.member == requestBody.subreddit)
 				bContainsSubreddit = true;
-		})
+		});
 
 		if (!bContainsSubreddit && requestBody.subreddit != 'anonymous') {
 			const rank = await redis.zRank('leaderboard', requestBody.subreddit);
 			
 			if (rank) {
 				const score = await redis.zScore('leaderboard', requestBody.subreddit);
-				leaderboard.push({rank: rank, member: requestBody.subreddit, score: score!});
+				list.push({rank: rank + 1, member: requestBody.subreddit, score: score!});
 			}
 		}
 
-		return c.json<SubredditResponse>({
+		return c.json<LeaderboardResponse>({
 			type: 'list',
 			postId,
 			list,
@@ -129,16 +129,12 @@ api.post('/getsubreddits', async (c) => {
 
 	try {
 		const requestBody = await c.req.raw.clone().json();
+		let list: {member: string, score: number}[] = [];
 
-		let options: ZRangeOptions = {
-			reverse: true,
-			by: 'lex',
-			limit: {
-				offset: 0,
-				count: Infinity
-			}
-		};
-		const list: {member: string; score: number;}[] = await redis.zRange('leaderboard', "["+requestBody.value, "("+requestBody.value, options);
+		const zScanResponse = await redis.zScan('leaderboard', 0, '*'+requestBody.value+'*', 5);
+		zScanResponse.members.forEach((element) => {
+			list.push({member: element.member, score: element.score});
+		});
 
 		return c.json<SubredditResponse>({
 			type: 'list',
