@@ -5,6 +5,7 @@ export type InitResponse = {
 	username: string;
 	subreddit: string;
 	level: number;
+	ai: [{health: number, defence: number, attack: number, speed: number}];
 };
 
 export type NumberResponse = {

@@ -28,6 +28,9 @@ api.get('/init', async (c) => {
 		var money = undefined; 
 		var subreddit = undefined;
 		var level = undefined;
+		var ai = [];
+		for (var i = 0; i < 1; i++)
+			ai.push({health: 1, defence: 1, attack: 1, speed: 1});
 
 		//redis.del('leaderboard');
 
@@ -39,6 +42,10 @@ api.get('/init', async (c) => {
 				subreddit = "u/" + username;
 
 			level = await redis.zScore('leaderboard', subreddit);
+
+			const aiList = await redis.get(username + 'ai');
+			if (aiList != undefined)
+				ai = JSON.parse(aiList);
 		}
 
 		return c.json<InitResponse>({
@@ -48,6 +55,7 @@ api.get('/init', async (c) => {
 			username: username ?? 'anonymous',
 			subreddit: subreddit ?? 'anonymous',
 			level: level ? level : 0,
+			ai: ai,
 		});
 	} catch (error) {
 		console.error(`API Init Error for post ${postId}:`, error);
@@ -180,7 +188,7 @@ api.post('/setsubreddit', async (c) => {
 
 	try {
 		const requestBody = await c.req.raw.clone().json();
-		const subreddit = requestBody.subreddit;
+		const subreddit = requestBody.subreddit.substring(0, 21).toLowerCase();
 		if (requestBody.username != 'anonymous')
 			await redis.set(requestBody.username + 'subreddit', subreddit);
 		const level = await redis.zScore('leaderboard', subreddit);
@@ -206,12 +214,29 @@ api.post('/setlevel', async (c) => {
 
 	try {
 		const requestBody = await c.req.raw.clone().json();
-		const num = await redis.zIncrBy('leaderboard', requestBody.subreddit, requestBody.level);
+		const num = await redis.zIncrBy('leaderboard', requestBody.subreddit.toLowerCase(), requestBody.level);
 		return c.json<NumberResponse>({
 			type: 'number',
 			postId,
 			num,
 		});
+	} catch (e) {
+		console.log('Set Level Error:', await c.req.text());
+	}
+});
+
+api.post('/updateai', async (c) => {
+	const { postId } = context;
+	if (!postId) {
+		return c.json<ErrorResponse>({
+			status: 'error',
+			message: 'postId is required',
+		}, 400);
+	}
+
+	try {
+		const requestBody = await c.req.raw.clone().json();
+		await redis.set(requestBody.username + 'ai', JSON.stringify(requestBody.ai));
 	} catch (e) {
 		console.log('Set Level Error:', await c.req.text());
 	}

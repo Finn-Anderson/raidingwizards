@@ -1,6 +1,7 @@
 import { Scene, GameObjects } from 'phaser';
 import { DropdownList } from '../dropdown';
 import { Leaderboard } from '../leaderboard';
+import { AI } from '../ai';
 
 export class MainMenu extends Scene {
 	background: GameObjects.Image | null = null;
@@ -10,6 +11,7 @@ export class MainMenu extends Scene {
 	levelText: Phaser.GameObjects.Text;
 	dropdown: DropdownList;
 	leaderboard: Leaderboard;
+	wizards: AI[];
 
 	constructor() {
 		super('MainMenu');
@@ -24,6 +26,7 @@ export class MainMenu extends Scene {
 		this.background = null;
 		this.logo = null;
 		this.fight = null;
+		this.wizards = [];
 	}
 
 	create() {
@@ -31,15 +34,13 @@ export class MainMenu extends Scene {
 
 		this.background = this.add.image(0, 0, 'background').setOrigin(0);
 
-		this.logo = this.add.image(0, 0, 'logo');
-
 		this.fight = this.add.sprite(width - 24 - 32, height * 0.5, 'fight').setInteractive({ useHandCursor: true })
 			.on('pointerover', () => { this.fight?.setTint(0xff5700); })
 			.on('pointerout', () => { this.fight?.clearTint(); })
 			.on('pointerup', () => { this.scene.start('Game'); });
 
 		this.moneyText = this.add
-			.text(4, 4, `Money: ${this.registry.get('money')}`, {
+			.text(4, 4, `Money: ${this.abbrvNum(this.registry.get('money'))}`, {
 				fontFamily: '"Kristen ITC", arial, serif',
 				fontSize: 48,
 				color: '#ffd700',
@@ -49,7 +50,7 @@ export class MainMenu extends Scene {
 			.setOrigin(0);
 
 		this.levelText = this.add
-			.text(4, 4, `Level: ${this.registry.get('level')}`, {
+			.text(4, 4, `Level: ${this.abbrvNum(this.registry.get('level'))}`, {
 				fontFamily: '"Kristen ITC", arial, serif',
 				fontSize: 48,
 				color: '#29FF00',
@@ -61,6 +62,24 @@ export class MainMenu extends Scene {
 		this.dropdown = new DropdownList(this, 8, 8);
 
 		this.leaderboard = new Leaderboard(this, width - 8, 8);
+
+		for (var i = 0; i < 6; i++) {
+			const x = i % 2 == 0 ? width / 4 : width / 2 + width / 4;
+			const y = height / 4 + Math.floor(i / 2) * height / 4;
+
+			if (this.registry.get('ai').length > i) {
+				const ai = new AI(this, x, y, 'player', i, 0);
+				ai.create();
+				ai.setStats(this.registry.get('ai')[i]);
+
+				this.wizards.push(ai);
+			}
+			else {
+				const ai = new AI(this, x, y, 'player', i, 0);
+				
+				this.wizards.push(ai);
+			}
+		}
 		
 		// Setup responsive layout
 		this.updateLayout(this.scale.width, this.scale.height);
@@ -76,7 +95,7 @@ export class MainMenu extends Scene {
 		if (this.background)
 			this.background.setDisplaySize(width, height);
 
-		const scaleFactor = Math.min(Math.min(width / 1024, height / 768), 1);
+		const scaleFactor = Math.min(height / 1600, 1);
 
 		if (this.logo) {
 			this.logo.setPosition(width / 2, height * 0.45);
@@ -101,13 +120,41 @@ export class MainMenu extends Scene {
 		this.dropdown.updateLayout(8 * scaleFactor, 8 * scaleFactor, scaleFactor);
 
 		this.leaderboard.updateLayout(width - 8 * scaleFactor, 8 * scaleFactor, scaleFactor);
+
+		this.wizards.forEach((ai) => {
+			const x = ai.index % 2 == 0 ? width / 4 : width / 2 + width / 4;
+			const y = height / 4 + Math.floor(ai.index / 2) * height / 4;
+
+			ai.updateLayout(x, y, scaleFactor * 2);
+		});
 	}
 
  	updateLevelText() {
-		this.levelText.setText(`Level: ${this.registry.get('level')}`);
+		this.levelText.setText(`Level: ${this.abbrvNum(this.registry.get('level'))}`);
+  	}
+
+ 	updateMoneyText() {
+		this.moneyText.setText(`Money: ${this.abbrvNum(this.registry.get('money'))}`);
   	}
 
 	updateLeaderboardText() {
 		this.leaderboard.refreshLeaderboard(this, this.leaderboard.domElement.x, this.leaderboard.domElement.y);
+	}
+
+	abbrvNum(number: number): string {
+		const abbrv = ['k', 'm', 'b', 't', 'sn'];
+
+		for (var i = abbrv.length - 1; i > -1; i--) {
+			const size = Math.pow(10, (i + 1) * 3);
+
+			if (size <= number) {
+				if (abbrv[i] == 'sn')
+					return number.toExponential();
+				else
+					return number.toString() + String(abbrv[i]);
+			}
+		}
+
+		return number.toString();
 	}
 }

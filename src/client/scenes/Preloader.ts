@@ -25,9 +25,9 @@ export class Preloader extends Scene {
 
   	preload() {
 		//  Load the assets for the game - Replace with your own assets
-		this.load.setPath('../assets');
+		this.load.setPath('../assets/');
 
-		this.load.image('logo', 'logo.png');
+		this.load.spritesheet('player', 'ai/player/player-spritesheet.png', {frameWidth: 100, frameHeight: 100});
 		this.load.image('fight', 'fight.png');
   	}
 
@@ -42,6 +42,7 @@ export class Preloader extends Scene {
 				this.registry.set('level', data.level);
 				this.registry.set('username', data.username);
 				this.registry.set('subreddit', data.subreddit);
+				this.registry.set('ai', data.ai);
 
 				this.scene.start('MainMenu');
 			} catch (error) {
@@ -49,6 +50,10 @@ export class Preloader extends Scene {
 				this.registry.set('level', 0);
 				this.registry.set('username', undefined);
 				this.registry.set('subreddit', undefined);
+				var aiArray = [];
+				for (var i = 0; i < 1; i++)
+					aiArray.push({health: 1, defence: 1, attack: 1, speed: 1})
+				this.registry.set('ai', aiArray);
 				console.error('Failed to fetch initial count:', error);
 
 				this.scene.start('MainMenu');

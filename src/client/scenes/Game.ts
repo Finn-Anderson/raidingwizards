@@ -32,7 +32,7 @@ export class Game extends Scene {
 				color: '#ff0029',
 				stroke: '#e60025',
 				strokeThickness: 2,
-			})
+			});
 
 		const createButton = (y: number, label: string, color: string, onClick: () => void) => {
 			const button = this.add
