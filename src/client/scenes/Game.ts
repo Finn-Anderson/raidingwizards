@@ -56,7 +56,7 @@ export class Game extends Scene {
 
 		// Increment button
 		this.incButton = createButton(this.scale.height * 0.55, 'Increment', '#00ff00', async () => {
-			this.registry.set('damage', this.registry.get('damage') + 1);
+			this.registry.set('damage', this.registry.get('damage') + 100);
 			this.updateDamageText();
 		});
 

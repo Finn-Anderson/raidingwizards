@@ -32,8 +32,6 @@ api.get('/init', async (c) => {
 		for (var i = 0; i < 1; i++)
 			ai.push({health: 1, defence: 1, attack: 1, speed: 1});
 
-		//redis.del('leaderboard');
-
 		if (username != undefined) {
 			money = await redis.get(username + 'money');
 
@@ -237,7 +235,8 @@ api.post('/updateai', async (c) => {
 	try {
 		const requestBody = await c.req.raw.clone().json();
 		await redis.set(requestBody.username + 'ai', JSON.stringify(requestBody.ai));
+		await redis.set(requestBody.username + 'money', String(requestBody.money));
 	} catch (e) {
-		console.log('Set Level Error:', await c.req.text());
+		console.log('Upgrade AI Error:', await c.req.text());
 	}
 });

@@ -29,6 +29,15 @@ export class Preloader extends Scene {
 
 		this.load.spritesheet('player', 'ai/player/player-spritesheet.png', {frameWidth: 100, frameHeight: 100});
 		this.load.image('fight', 'fight.png');
+		this.load.image('money', 'coin.png');
+		this.load.image('level', 'level.png');
+
+		// AI
+		this.load.image('attack', 'attack.png');
+		this.load.image('defence', 'defence.png');
+		this.load.image('health', 'health.png');
+		this.load.image('speed', 'speed.png');
+		this.load.image('upgrade', 'upgrade.png');
   	}
 
   	create() {

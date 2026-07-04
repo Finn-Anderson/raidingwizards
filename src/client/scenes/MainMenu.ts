@@ -5,28 +5,28 @@ import { AI } from '../ai';
 
 export class MainMenu extends Scene {
 	background: GameObjects.Image | null = null;
-	logo: GameObjects.Image | null = null;
 	fight: GameObjects.Sprite | null = null;
+	moneyImage: GameObjects.Image | null = null;
+	levelImage: GameObjects.Image | null = null;
 	moneyText: Phaser.GameObjects.Text;
 	levelText: Phaser.GameObjects.Text;
 	dropdown: DropdownList;
 	leaderboard: Leaderboard;
 	wizards: AI[];
+	buttons: {button: Phaser.GameObjects.Rectangle, text: Phaser.GameObjects.Text, cost: Phaser.GameObjects.Text, costImg: Phaser.GameObjects.Image, index: number}[];
+	scaleFactor: number = 1;
 
 	constructor() {
 		super('MainMenu');
 	}
 
-	/**
-	 * Reset cached GameObject references every time the scene starts.
-	 * The same Scene instance is reused by Phaser, so we must ensure
-	 * stale (destroyed) objects are cleared out when the scene restarts.
-	 */
 	init(): void {
 		this.background = null;
-		this.logo = null;
+		this.moneyImage = null;
+		this.levelImage = null;
 		this.fight = null;
 		this.wizards = [];
+		this.buttons = [];
 	}
 
 	create() {
@@ -39,8 +39,10 @@ export class MainMenu extends Scene {
 			.on('pointerout', () => { this.fight?.clearTint(); })
 			.on('pointerup', () => { this.scene.start('Game'); });
 
+		this.moneyImage = this.add.image(4, 4, 'money').setOrigin(0);
+
 		this.moneyText = this.add
-			.text(4, 4, `Money: ${this.abbrvNum(this.registry.get('money'))}`, {
+			.text(4, 4, `${this.abbrvNum(this.registry.get('money'))}`, {
 				fontFamily: '"Kristen ITC", arial, serif',
 				fontSize: 48,
 				color: '#ffd700',
@@ -49,8 +51,10 @@ export class MainMenu extends Scene {
 			})
 			.setOrigin(0);
 
+		this.levelImage = this.add.image(4, 4, 'level').setOrigin(0);
+
 		this.levelText = this.add
-			.text(4, 4, `Level: ${this.abbrvNum(this.registry.get('level'))}`, {
+			.text(4, 4, `${this.abbrvNum(this.registry.get('level'))}`, {
 				fontFamily: '"Kristen ITC", arial, serif',
 				fontSize: 48,
 				color: '#29FF00',
@@ -75,11 +79,54 @@ export class MainMenu extends Scene {
 				this.wizards.push(ai);
 			}
 			else {
-				const ai = new AI(this, x, y, 'player', i, 0);
+				const text = this.add.text(x, y - 128, `+`, {
+					fontFamily: '"Kristen ITC", arial, serif',
+					fontSize: 48,
+					color: '#ffffff',
+					stroke: '#f2f2f2',
+					strokeThickness: 2,
+				});
+
+				const cost = this.add.text(x, y + 48, `10`, {
+					fontFamily: '"Kristen ITC", arial, serif',
+					fontSize: 48,
+					color: '#ffd700',
+					stroke: '#e6c200',
+					strokeThickness: 2,
+				});
 				
-				this.wizards.push(ai);
+				const costImg = this.add.image(x, y + 48 - cost.width, 'money').setOrigin(0);
+
+				const button = this.add.rectangle(x, y, 250, 250, 0x000000, 0)
+					.setInteractive({useHandCursor: true})
+					.on('pointerover', () => { text.setTint(0xff5700); })
+					.on('pointerout', () => { text.clearTint(); })
+					.on('pointerup', () => { 
+						const currentMoney = this.registry.get('money');
+						if (currentMoney < 10)
+							return;
+
+						const ai = new AI(this, x, y, 'player', i, 0);
+						ai.create();
+
+						this.buttons.at(i)?.button.destroy();
+						this.buttons.at(i)?.text.destroy();
+						this.buttons.at(i)?.cost.destroy();
+						this.buttons.splice(i, 1);
+
+						this.registry.set('money', currentMoney - 10);
+						this.updateMoneyText();
+
+						this.wizards.push(ai);
+						ai.save();
+						
+						this.updateLayout(this.scale.width, this.scale.height);
+					})
+
+				this.buttons.push({button, text, cost, costImg, index: i});
 			}
 		}
+		this.updateMoneyText();
 		
 		// Setup responsive layout
 		this.updateLayout(this.scale.width, this.scale.height);
@@ -95,46 +142,84 @@ export class MainMenu extends Scene {
 		if (this.background)
 			this.background.setDisplaySize(width, height);
 
-		const scaleFactor = Math.min(height / 1600, 1);
-
-		if (this.logo) {
-			this.logo.setPosition(width / 2, height * 0.45);
-			this.logo.setScale(scaleFactor);
-		}
+		this.scaleFactor = Math.min(height / 1600, 1);
 
 		if (this.fight) {
 			this.fight.setPosition(width / 2, height * 0.9);
-			this.fight.setDisplaySize(96 * scaleFactor, 96 * scaleFactor);
+			this.fight.setDisplaySize(96 * this.scaleFactor, 96 * this.scaleFactor);
+		}
+
+		if (this.moneyImage) {
+			this.moneyImage.setPosition(8 * this.scaleFactor, 88 * this.scaleFactor);
+			this.moneyImage.setScale(this.scaleFactor);
 		}
 
 		if (this.moneyText) {
-			this.moneyText.setPosition(8 * scaleFactor, 80 * scaleFactor);
-			this.moneyText.setScale(scaleFactor);
+			this.moneyText.setPosition(60 * this.scaleFactor, 80 * this.scaleFactor);
+			this.moneyText.setScale(this.scaleFactor);
+		}
+
+		if (this.levelImage) {
+			this.levelImage.setPosition(8 * this.scaleFactor, 144 * this.scaleFactor);
+			this.levelImage.setScale(this.scaleFactor);
 		}
 
 		if (this.levelText) {
-			this.levelText.setPosition(8 * scaleFactor, 136 * scaleFactor);
-			this.levelText.setScale(scaleFactor);
+			this.levelText.setPosition(60 * this.scaleFactor, 136 * this.scaleFactor);
+			this.levelText.setScale(this.scaleFactor);
 		}
 
-		this.dropdown.updateLayout(8 * scaleFactor, 8 * scaleFactor, scaleFactor);
+		this.dropdown.updateLayout(8 * this.scaleFactor, 8 * this.scaleFactor, this.scaleFactor);
 
-		this.leaderboard.updateLayout(width - 8 * scaleFactor, 8 * scaleFactor, scaleFactor);
+		this.leaderboard.updateLayout(width - 8 * this.scaleFactor, 8 * this.scaleFactor, this.scaleFactor);
 
 		this.wizards.forEach((ai) => {
 			const x = ai.index % 2 == 0 ? width / 4 : width / 2 + width / 4;
 			const y = height / 4 + Math.floor(ai.index / 2) * height / 4;
 
-			ai.updateLayout(x, y, scaleFactor * 2);
+			ai.updateLayout(x, y, this.scaleFactor);
+		});
+		
+		if (this.registry.get('money') < 10)
+			return;
+
+		this.buttons.forEach((element) => {
+			const x = element.index % 2 == 0 ? width / 4 : width / 2 + width / 4;
+			const y = height / 4 + Math.floor(element.index / 2) * height / 4;
+
+			element.button.setDisplaySize(250 * this.scaleFactor, 250 * this.scaleFactor).updateDisplayOrigin();
+			element.button.setPosition(x, y);
+
+			element.text.setPosition(x, y - 128 * this.scaleFactor);
+			element.text.setScale(this.scaleFactor * 3);
+
+			element.cost.setPosition(x + (element.cost.width / 2) * this.scaleFactor, y + 48 * this.scaleFactor);
+			element.cost.setScale(this.scaleFactor);
+
+			element.costImg.setPosition(x - (element.cost.width / 2) * this.scaleFactor, y + (48 + 8) * this.scaleFactor);
+			element.costImg.setScale(this.scaleFactor);
 		});
 	}
 
- 	updateLevelText() {
-		this.levelText.setText(`Level: ${this.abbrvNum(this.registry.get('level'))}`);
+ 	updateMoneyText() {
+		const currentMoney = this.registry.get('money');
+		this.moneyText.setText(`${this.abbrvNum(currentMoney)}`);
+
+		for (const element of this.wizards) {
+			element.updateUpgradeDisplay();
+		}
+
+		const bShow = currentMoney >= 10;
+		this.buttons.forEach((element) => {
+			element.button.setScale(bShow ? this.scaleFactor : 0);
+			element.text.setScale(bShow ? this.scaleFactor * 3 : 0);
+			element.cost.setScale(bShow ? this.scaleFactor : 0);
+			element.costImg.setScale(bShow ? this.scaleFactor : 0);
+		});
   	}
 
- 	updateMoneyText() {
-		this.moneyText.setText(`Money: ${this.abbrvNum(this.registry.get('money'))}`);
+ 	updateLevelText() {
+		this.levelText.setText(`${this.abbrvNum(this.registry.get('level'))}`);
   	}
 
 	updateLeaderboardText() {

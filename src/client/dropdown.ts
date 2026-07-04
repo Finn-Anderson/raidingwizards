@@ -26,12 +26,13 @@ export class DropdownList {
 			else
 				this.button.innerHTML = "r/";
 
+			this.setSubreddit(this.button.innerHTML + this.element.value);
 			this.GetSubreddits();
 		};
 		inputDiv.appendChild(this.button);
 
 		this.element = document.createElement('input');
-		this.element.value = subreddit.slice(2);
+		this.element.value = subreddit.substring(2);
 		this.element.maxLength = 21;
 		inputDiv.appendChild(this.element);
 
@@ -84,6 +85,7 @@ export class DropdownList {
 			if (event.target != this.element) {
 				this.element.blur();
 				this.container.innerHTML = '';
+				this.element.value = this.scene.registry.get('subreddit').substring(2);
 			}
 		});
 	}
@@ -110,6 +112,9 @@ export class DropdownList {
 
 			const responseData = (await response.json()) as SubredditResponse;
 			const result = await responseData.list;
+
+			if (document.activeElement != this.element)
+				return;
 
 			this.container.innerHTML = '';
 			let bContainsSubreddit = false;

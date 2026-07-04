@@ -1,18 +1,16 @@
 import * as Phaser from 'phaser';
 import { LeaderboardResponse } from '../shared/api';
+import { MainMenu } from './scenes/MainMenu';
 
 export class Leaderboard {
 	table: HTMLTableElement
 	domElement: Phaser.GameObjects.DOMElement
 
-	constructor(scene: Phaser.Scene, x: number, y: number) {
+	constructor(scene: MainMenu, x: number, y: number) {
 		this.refreshLeaderboard(scene, x, y);
 	}
 
-	async refreshLeaderboard(scene: Phaser.Scene, x: number, y: number) {
-		if (this.domElement)
-			this.domElement.destroy();
-
+	async refreshLeaderboard(scene: MainMenu, x: number, y: number) {
 		try {
 			var payload = {
 				subreddit: scene.registry.get('subreddit')
@@ -29,6 +27,9 @@ export class Leaderboard {
 			});
 			if (!response.ok)
 				throw new Error(`Failed to fetch leaderboard: ${response.status}`);
+			
+			if (this.domElement)
+				this.domElement.destroy();
 
 			const responseData = (await response.json()) as LeaderboardResponse;
 			responseData.list.forEach((row, index) => {
@@ -59,7 +60,7 @@ export class Leaderboard {
 				tr.appendChild(tdSubreddit);
 
 				const tdLevel = document.createElement('td');
-				tdLevel.innerHTML = row.score.toString();
+				tdLevel.innerHTML = scene.abbrvNum(row.score);
 				tr.appendChild(tdLevel);
 
 				this.table.appendChild(tr);
