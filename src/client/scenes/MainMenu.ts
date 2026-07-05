@@ -1,7 +1,7 @@
 import { Scene, GameObjects } from 'phaser';
 import { DropdownList } from '../dropdown';
 import { Leaderboard } from '../leaderboard';
-import { AI } from '../ai';
+import { AI } from '../ai/ai';
 
 export class MainMenu extends Scene {
 	background: GameObjects.Image | null = null;
@@ -118,7 +118,7 @@ export class MainMenu extends Scene {
 						this.updateMoneyText();
 
 						this.wizards.push(ai);
-						ai.save();
+						ai.MainMenuComponent.save();
 						
 						this.updateLayout(this.scale.width, this.scale.height);
 					})
@@ -206,7 +206,7 @@ export class MainMenu extends Scene {
 		this.moneyText.setText(`${this.abbrvNum(currentMoney)}`);
 
 		for (const element of this.wizards) {
-			element.updateUpgradeDisplay();
+			element.MainMenuComponent.updateUpgradeDisplay();
 		}
 
 		const bShow = currentMoney >= 10;

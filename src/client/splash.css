@@ -45,3 +45,8 @@ button:hover {
 	transform: rotate(10deg) scale(1.15);
 	box-shadow: 0 0px 15px #FF570080;
 }
+
+@font-face {
+	font-family: 'Kristen ITC';
+	src: url('../../public/assets/fonts/ITCKRIST.TTF') format('truetype');
+}

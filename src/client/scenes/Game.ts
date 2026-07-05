@@ -1,5 +1,6 @@
 import { Scene } from 'phaser';
 import * as Phaser from 'phaser';
+import { AI } from '../ai/ai';
 
 export class Game extends Scene {
 	camera: Phaser.Cameras.Scene2D.Camera;
@@ -9,6 +10,9 @@ export class Game extends Scene {
 	incButton: Phaser.GameObjects.Text;
 	decButton: Phaser.GameObjects.Text;
 	goButton: Phaser.GameObjects.Text;
+
+	wizards: AI[];
+	enemy: AI;
 
 	constructor() {
 		super('Game');
@@ -103,6 +107,23 @@ export class Game extends Scene {
   	}
 
  	updateDamageText() {
-		this.damageText.setText(`Damage: ${this.registry.get('damage')}`);
+		this.damageText.setText(`Damage: ${this.abbrvNum(this.registry.get('damage'))}`);
   	}
+
+	abbrvNum(number: number): string {
+		const abbrv = ['k', 'm', 'b', 't', 'sn'];
+
+		for (var i = abbrv.length - 1; i > -1; i--) {
+			const size = Math.pow(10, (i + 1) * 3);
+
+			if (size <= number) {
+				if (abbrv[i] == 'sn')
+					return number.toExponential();
+				else
+					return number.toString() + String(abbrv[i]);
+			}
+		}
+
+		return number.toString();
+	}
 }

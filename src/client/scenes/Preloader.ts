@@ -1,5 +1,6 @@
 import { Scene } from 'phaser';
 import { InitResponse } from '../../shared/api';
+import { Ability } from '../ai/ability';
 
 export class Preloader extends Scene {
 	constructor() {
@@ -13,13 +14,9 @@ export class Preloader extends Scene {
 
 		this.add.rectangle(width / 2, height / 2, width / 1.5, 32).setStrokeStyle(1, 0xffffff);
 
-		//  This is the progress bar itself. It will increase in size from the left based on the % of progress.
 		const bar = this.add.rectangle(width / 2 - (width / 1.5 / 2) + 4, height / 2, 4, 28, 0xffffff);
-
-		//  Use the 'progress' event emitted by the LoaderPlugin to update the loading bar
 		this.load.on('progress', (progress: number) => {
-		//  Update the progress bar (our bar is 464px wide, so 100% = 464px)
-		bar.width = Math.max(width / 1.5 * progress - 8, 0);
+			bar.width = Math.max(width / 1.5 * progress - 8, 0);
 		});
   	}
 
@@ -68,5 +65,17 @@ export class Preloader extends Scene {
 				this.scene.start('MainMenu');
 			}
 		})();
+
+		let abilities: Ability[] = [];
+		abilities.push(new Ability('attack', '', 1, 1, 1));
+		abilities.push(new Ability('attack', '', 3, 1, 3));
+		abilities.push(new Ability('attack', '', 3, 0, 1, 'weaken', 'reduces enemy\'s defence by half (stacks)'));
+		abilities.push(new Ability('defence', '', 1, 0.5, 1));
+		abilities.push(new Ability('defence', '', 3, 0, 1, 'taunt', 'taunts enemy to target last taunter'));
+		abilities.push(new Ability('health', '', 1, 0.5, 1));
+		abilities.push(new Ability('health', '', 4, 5, 1));
+		abilities.push(new Ability('speed', '', 3, 0, 1, 'slow', 'halves enemy speed (stacks)'));
+
+		this.registry.set('abilities', abilities);
   	}
 }

@@ -114,3 +114,8 @@ td:not(:first-child):not(:last-child) {
 td {
 	padding: 0px 8px;
 }
+
+@font-face {
+	font-family: 'Kristen ITC';
+	src: url('../../public/assets/fonts/ITCKRIST.TTF') format('truetype');
+}
