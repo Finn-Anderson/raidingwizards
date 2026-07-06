@@ -1,3 +1,4 @@
+import * as Phaser from 'phaser';
 import { MainMenu } from '../scenes/MainMenu';
 import { Game } from '../scenes/Game';
 import { MainMenuComponent } from '../ai/mainMenuComponent'
@@ -5,9 +6,9 @@ import { GameComponent } from '../ai/gameComponent'
 
 export class AI extends Phaser.GameObjects.Sprite {
 	override scene: MainMenu | Game;
-	identifier: string = '';
+	identifier: string;
 	stats: {health: number, defence: number, attack: number, speed: number, ability1Index: number, ability2Index: number}; // item?
-	debuffs: {debuff: string, applier: AI}[] = []; // debuff:indexFrom i.e. slow:0 where 0 = the first wizard in wizard array
+	debuffs: {debuff: string, applier: AI}[]; // debuff:indexFrom i.e. slow:0 where 0 = the first wizard in wizard array
 	index: number = 0;
 	storedScale: number = 1;
 	MainMenuComponent: MainMenuComponent;
@@ -25,6 +26,7 @@ export class AI extends Phaser.GameObjects.Sprite {
 
 		this.identifier = String(texture);
 		this.stats = {health: 1, defence: 1, attack: 1, speed: 1, ability1Index: 0, ability2Index: 1};
+		this.debuffs = [];
 
 		this.MainMenuComponent = new MainMenuComponent(this);
 		this.GameComponent = new GameComponent(this);

@@ -72,7 +72,7 @@ export class MainMenu extends Scene {
 			const y = height / 4 + Math.floor(i / 2) * height / 4;
 
 			if (this.registry.get('ai').length > i) {
-				const ai = new AI(this, x, y, 'player', i, 0);
+				const ai = new AI(this, x, y, 'player', 0);
 				ai.create();
 				ai.setStats(this.registry.get('ai')[i]);
 
@@ -120,8 +120,8 @@ export class MainMenu extends Scene {
 						this.wizards.push(ai);
 						ai.MainMenuComponent.save();
 						
-						this.updateLayout(this.scale.width, this.scale.height);
-					})
+						this.updateLayout(width, height);
+					});
 
 				this.buttons.push({button, text, cost, costImg, index: i});
 			}
@@ -129,7 +129,7 @@ export class MainMenu extends Scene {
 		this.updateMoneyText();
 		
 		// Setup responsive layout
-		this.updateLayout(this.scale.width, this.scale.height);
+		this.updateLayout(width, height);
 		this.scale.on('resize', (gameSize: Phaser.Structs.Size) => {
 			const { width, height } = gameSize;
 			this.updateLayout(width, height);

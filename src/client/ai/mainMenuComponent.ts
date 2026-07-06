@@ -1,5 +1,7 @@
+import * as Phaser from 'phaser';
 import { AI } from '../ai/ai';
 import { MainMenu } from '../scenes/MainMenu';
+import { Ability } from './ability';
 
 export class MainMenuComponent {
 	owner: AI;
@@ -9,6 +11,9 @@ export class MainMenuComponent {
 	statsText: Phaser.GameObjects.Text[] = [];
 	costImage: Phaser.GameObjects.Image;
 	costText: Phaser.GameObjects.Text;
+
+	abilityContainers: Phaser.GameObjects.Rectangle[] = [];
+	abilityImages: Phaser.GameObjects.Image[] = [];
 
 	constructor(ai: AI) {
 		this.owner = ai;
@@ -39,10 +44,11 @@ export class MainMenuComponent {
 				}).setOrigin(0).setInteractive();
 			this.statsText.push(text);
 
-			const image = this.owner.scene.add.image(4, 4, 'upgrade').setOrigin(0).setInteractive({useHandCursor: true})
-				.on('pointerover', () => { image.filters?.internal.addGlow(); image.filters?.external.addGlow(); })
+			const image = this.owner.scene.add.image(4, 4, 'upgrade').setOrigin(0).setInteractive({useHandCursor: true}).enableFilters()
+				.on('pointerover', () => { image.filters?.internal.addGlow(); image.filters?.external.addGlow(0xff5700, 2); })
 				.on('pointerout', () => { image.filters?.internal.clear(); image.filters?.external.clear(); })
 				.on('pointerup', () => { this.upgradeStat(str); });
+			
 			this.upgradeIcons.push(image);
 
 			this.owner.setupMouseOverAnim(textImg);
@@ -65,6 +71,16 @@ export class MainMenuComponent {
 
 		this.owner.setupMouseOverAnim(this.costImage);
 		this.owner.setupMouseOverAnim(this.costText);
+
+		const ability1: Ability = this.owner.scene.registry.get('abilities')[this.owner.stats.ability1Index];
+		const display1 = ability1.display(this.owner, 4, 4, 0);
+		this.abilityContainers.push(display1.rectangle);
+		this.abilityImages.push(display1.image);
+
+		const ability2 = this.owner.scene.registry.get('abilities')[this.owner.stats.ability2Index];
+		const display2 = ability2.display(this.owner, 4, 4, 0);
+		this.abilityContainers.push(display2.rectangle);
+		this.abilityImages.push(display2.image);
 	}
 
 	updateMainMenuLayout(w: number, h: number, scale: number) {
@@ -86,6 +102,16 @@ export class MainMenuComponent {
 
 		this.costText.setPosition(w + 128 * scale, h + 100 * scale);
 		this.costText.setScale(scale);
+
+		this.abilityContainers.forEach((element) => {
+			element.setPosition(w - 64, h + 108 * scale);
+			element.setScale(scale);
+		});
+
+		this.abilityImages.forEach((element) => {
+			element.setPosition(w + 64, h + 108 * scale);
+			element.setScale(scale);
+		});
 	}
 
 	upgradeStat(name: String) {

@@ -33,6 +33,8 @@ api.get('/init', async (c) => {
 			ai.push({health: 1, defence: 1, attack: 1, speed: 1, ability1Index: 0, ability2Index: 1});
 
 		redis.del(username + 'ai');
+		redis.del(username + 'money');
+		redis.del('leaderboard');
 
 		if (username != undefined) {
 			money = await redis.get(username + 'money');
@@ -51,7 +53,7 @@ api.get('/init', async (c) => {
 		return c.json<InitResponse>({
 			type: 'init',
 			postId: postId,
-			money: money ? parseInt(money) : 0,
+			money: money ? parseInt(money) : 20,
 			username: username ?? 'anonymous',
 			subreddit: subreddit ?? 'anonymous',
 			level: level ? level : 0,

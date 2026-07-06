@@ -1,5 +1,7 @@
+import * as Phaser from 'phaser';
 import { AI } from '../ai/ai';
 import { Game } from '../scenes/Game';
+import { Ability } from './ability';
 
 export class GameComponent {
 	owner: AI;
@@ -14,16 +16,41 @@ export class GameComponent {
 	speedBarContainer: Phaser.GameObjects.Rectangle;
 	speedBar: Phaser.GameObjects.Rectangle;
 
+	abilityContainers: Phaser.GameObjects.Rectangle[];
+	abilityImages: Phaser.GameObjects.Image[];
+
 	constructor(ai: AI) {
 		this.owner = ai;
 	}
 
 	createGame() {
-		
+		const ability1: Ability = this.owner.scene.registry.get('abilities')[this.owner.stats.ability1Index];
+		const display1 = ability1.display(this.owner, 4, 4, 0);
+		this.abilityContainers.push(display1.rectangle);
+		this.abilityImages.push(display1.image);
+
+		const ability2 = this.owner.scene.registry.get('abilities')[this.owner.stats.ability2Index];
+		const display2 = ability2.display(this.owner, 4, 4, 0);
+		this.abilityContainers.push(display2.rectangle);
+		this.abilityImages.push(display2.image);
 	}
 
 	updateGameLayout(w: number, h: number, scale: number) {
-		
+		this.abilityContainers.forEach((element) => {
+			if (element.scale == 0)
+				return;
+
+			element.setPosition(w, h);
+			element.setScale(scale);
+		});
+
+		this.abilityImages.forEach((element) => {
+			if (element.scale == 0)
+				return;
+
+			element.setPosition(w + 128, h);
+			element.setScale(scale);
+		});
 	}
 
 	turn(targets: AI[], auto: boolean) {
@@ -51,26 +78,24 @@ export class GameComponent {
 		}
 
 		if (auto) {
-			let index: number = this.owner.stats.ability1Index;
+			let ability: Ability = this.owner.scene.registry.get('abilities')[this.owner.stats.ability1Index]; // calculate index based on cooldown timer i.e. if ability1 takes 4 turns to cooldown and ability2 takes 1, do ability1 first
 
 			if (mainTarget == undefined) {
 				// loop through targets and find most optimal target
-				// calculate index based on cooldown timer i.e. if ability1 takes 4 turns to cooldown and ability2 takes 1, do ability1 first. 
 				// if ability is debuff, don't do if all enemy's have debuff.
 				// if ability is health, heal allies.
 			}
 
-			this.performAbility(index, mainTarget, targets);
+			ability.performAbility(this.owner, mainTarget, targets);
 		}
 		else {
-			// display ability buttons
+			this.owner.play('idle');
+
+			this.abilityContainers.forEach((element) => { element.setScale(this.owner.storedScale); });
+			this.abilityImages.forEach((element) => { element.setScale(this.owner.storedScale); });
 		}
 
 		this.owner.debuffs.length = 0;
-	}
-
-	performAbility(index: number, mainTarget: AI | undefined, targets: AI[]) {
-		// Perform ability. Loop on num projectiles. Update target status on death i.e. enemy = new stronger enemy, player = unusable, last player = game over.
 	}
 
 	takeHealth(damage: number) {
@@ -81,8 +106,18 @@ export class GameComponent {
 		else
 			this.owner.setTint(0x00ff57);
 
+		if (this.health <= 0) {
+			this.owner.setRotation(90 * (Math.PI / 180)); // animate
+		}
+
 		setTimeout(() => {
 			this.owner.clearTint();
+
+			if (this.health > 0)
+				return;
+			
+			this.owner.scene.wizards = this.owner.scene.wizards.filter(item => item !== this.owner);
+			this.owner.destroy();
 		}, 200);
 	}
 }
