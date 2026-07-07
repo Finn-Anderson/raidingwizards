@@ -1,6 +1,6 @@
 import * as Phaser from 'phaser';
-import { AI } from '../ai/ai';
 import { MainMenu } from '../scenes/MainMenu';
+import { AI } from './ai';
 import { Ability } from './ability';
 
 export class MainMenuComponent {
@@ -44,9 +44,9 @@ export class MainMenuComponent {
 				}).setOrigin(0).setInteractive();
 			this.statsText.push(text);
 
-			const image = this.owner.scene.add.image(4, 4, 'upgrade').setOrigin(0).setInteractive({useHandCursor: true}).enableFilters()
-				.on('pointerover', () => { image.filters?.internal.addGlow(); image.filters?.external.addGlow(0xff5700, 2); })
-				.on('pointerout', () => { image.filters?.internal.clear(); image.filters?.external.clear(); })
+			const image = this.owner.scene.add.image(4, 4, 'upgrade').setOrigin(0).setInteractive({useHandCursor: true}).setTint(0x29FF00)
+				.on('pointerover', () => { image.setTint(0xff5700); })
+				.on('pointerout', () => { image.setTint(0x29FF00); })
 				.on('pointerup', () => { this.upgradeStat(str); });
 			
 			this.upgradeIcons.push(image);
@@ -103,15 +103,16 @@ export class MainMenuComponent {
 		this.costText.setPosition(w + 128 * scale, h + 100 * scale);
 		this.costText.setScale(scale);
 
-		this.abilityContainers.forEach((element) => {
-			element.setPosition(w - 64, h + 108 * scale);
-			element.setScale(scale);
-		});
+		for (var i = 0; i < 2; i++) {
+			const width = w + (40 * (i * 2 - 1) * scale - 4);
+			const height = h + 140 * scale;
 
-		this.abilityImages.forEach((element) => {
-			element.setPosition(w + 64, h + 108 * scale);
-			element.setScale(scale);
-		});
+			this.abilityContainers[i]!.setPosition(width, height);
+			this.abilityContainers[i]!.setScale(scale);
+
+			this.abilityImages[i]!.setPosition(width, height);
+			this.abilityImages[i]!.setScale(scale);
+		}
 	}
 
 	upgradeStat(name: String) {

@@ -1,6 +1,7 @@
 import { Scene } from 'phaser';
 import * as Phaser from 'phaser';
 import { AI } from '../ai/ai';
+import { Ability } from '../ai/ability';
 
 export class Game extends Scene {
 	camera: Phaser.Cameras.Scene2D.Camera;
@@ -13,6 +14,8 @@ export class Game extends Scene {
 
 	wizards: AI[];
 	enemy: AI;
+
+	selectedAbility: Ability | undefined = undefined;
 
 	constructor() {
 		super('Game');

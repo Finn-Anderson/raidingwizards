@@ -35,6 +35,13 @@ export class Preloader extends Scene {
 		this.load.image('health', 'health.png');
 		this.load.image('speed', 'speed.png');
 		this.load.image('upgrade', 'upgrade.png');
+
+		// Abilities
+		this.load.image('multiAttack', 'abilities/multiAttack.png');
+		this.load.image('weaken', 'abilities/weaken.png');
+		this.load.image('taunt', 'abilities/taunt.png');
+		this.load.image('multiHeal', 'abilities/multiHeal.png');
+		this.load.image('slow', 'abilities/slow.png');
   	}
 
   	create() {
@@ -67,14 +74,14 @@ export class Preloader extends Scene {
 		})();
 
 		let abilities: Ability[] = [];
-		abilities.push(new Ability('attack', '', 1, 1, 1));
-		abilities.push(new Ability('attack', '', 3, 1, 3));
-		abilities.push(new Ability('attack', '', 3, 0, 1, 'weaken', 'reduces enemy\'s defence by half (stacks)'));
-		abilities.push(new Ability('defence', '', 1, 0.5, 1));
-		abilities.push(new Ability('defence', '', 3, 0, 1, 'taunt', 'taunts enemy to target last taunter'));
-		abilities.push(new Ability('health', '', 1, 0.5, 1));
-		abilities.push(new Ability('health', '', 4, 5, 1));
-		abilities.push(new Ability('speed', '', 3, 0, 1, 'slow', 'halves enemy speed (stacks)'));
+		abilities.push(new Ability('Attack', 'attack', 'attack', 1, 1, 1));
+		abilities.push(new Ability('Multi-Attack', 'attack', 'multiAttack', 3, 1, 3));
+		abilities.push(new Ability('Weaken', 'attack', 'weaken', 3, 0, 1, 'weaken', 'reduces enemy\'s defence by half (stacks)'));
+		abilities.push(new Ability('Riposte', 'defence', 'defence', 1, 0.5, 1));
+		abilities.push(new Ability('Taunt', 'defence', 'taunt', 3, 0, 1, 'taunt', 'taunts enemy to target last taunter'));
+		abilities.push(new Ability('Heal', 'health', 'health', 1, 0.5, 1));
+		abilities.push(new Ability('Multi-Heal', 'health', 'multiHeal', 4, 5, 1));
+		abilities.push(new Ability('Slow', 'speed', 'slow', 3, 0, 1, 'slow', 'halves enemy speed (stacks)'));
 
 		this.registry.set('abilities', abilities);
   	}

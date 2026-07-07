@@ -1,6 +1,6 @@
 import * as Phaser from 'phaser';
-import { AI } from '../ai/ai';
 import { Game } from '../scenes/Game';
+import { AI } from './ai';
 import { Ability } from './ability';
 
 export class GameComponent {
@@ -36,24 +36,21 @@ export class GameComponent {
 	}
 
 	updateGameLayout(w: number, h: number, scale: number) {
-		this.abilityContainers.forEach((element) => {
-			if (element.scale == 0)
-				return;
+		for (var i = 0; i < 2; i++) {
+			const width = w + (64 * (i * 2 - 1) * scale);
+			const height = h;
 
-			element.setPosition(w, h);
-			element.setScale(scale);
-		});
+			this.abilityContainers[i]!.setPosition(width, height);
+			if (this.abilityContainers[i]!.scale > 0)
+				this.abilityContainers[i]!.setScale(scale);
 
-		this.abilityImages.forEach((element) => {
-			if (element.scale == 0)
-				return;
-
-			element.setPosition(w + 128, h);
-			element.setScale(scale);
-		});
+			this.abilityImages[i]!.setPosition(width, height);
+			if (this.abilityImages[i]!.scale > 0)
+				this.abilityImages[i]!.setScale(scale * 5);
+		}
 	}
 
-	turn(targets: AI[], auto: boolean) {
+	turn(targets: AI[], allies: AI[], auto: boolean) {
 		let speed = this.owner.stats.speed;
 		for (const element of this.owner.debuffs) {
 			if (element.debuff != 'slow')
@@ -75,6 +72,7 @@ export class GameComponent {
 				continue;
 
 			mainTarget = element.applier;
+			auto = true;
 		}
 
 		if (auto) {
@@ -92,7 +90,7 @@ export class GameComponent {
 			this.owner.play('idle');
 
 			this.abilityContainers.forEach((element) => { element.setScale(this.owner.storedScale); });
-			this.abilityImages.forEach((element) => { element.setScale(this.owner.storedScale); });
+			this.abilityImages.forEach((element) => { element.setScale(this.owner.storedScale * 5); });
 		}
 
 		this.owner.debuffs.length = 0;
