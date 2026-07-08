@@ -1,9 +1,8 @@
 import * as Phaser from 'phaser';
 
 export class HoverComponent {
+	scene: Phaser.Scene;
 	timeout: number;
-	x: number;
-	y: number;
 
 	titleContainer: Phaser.GameObjects.Graphics;
 	titleText: Phaser.GameObjects.Text;
@@ -11,12 +10,14 @@ export class HoverComponent {
 	descriptionContainer: Phaser.GameObjects.Graphics;
 	descriptionText: Phaser.GameObjects.Text;
 
-	constructor(scene: Phaser.Scene, x: number, y: number) {
+	constructor(scene: Phaser.Scene, x: number, y: number, scale: number) {
+		this.scene = scene;
+
 		this.titleContainer = scene.add.graphics({fillStyle: { color: 0xff5700 }, lineStyle: { width: 2, color: 0xe64e00 }})
-			.fillRoundedRect(x, y, 500, 64, { tl: 4, tr: 4, bl: 0, br: 0 })
-			.strokeRoundedRect(x, y, 500, 64, { tl: 4, tr: 4, bl: 0, br: 0 })
+			.fillRoundedRect(0, 0, 500, 64, { tl: 4, tr: 4, bl: 0, br: 0 })
+			.strokeRoundedRect(0, 0, 500, 64, { tl: 4, tr: 4, bl: 0, br: 0 })
 			.setAlpha(0)
-			.setDepth(1);
+			.setDepth(2);
 
 		this.titleText = scene.add.text(x + 8, y + 4, ``, {
 				fontFamily: '"Kristen ITC", arial, serif',
@@ -26,13 +27,13 @@ export class HoverComponent {
 				strokeThickness: 2,
 			})
 			.setAlpha(0)
-			.setDepth(1);
+			.setDepth(2);
 
 		this.descriptionContainer = scene.add.graphics({fillStyle: { color: 0x333333 }, lineStyle: { width: 2, color: 0x121212 }})
-			.fillRoundedRect(x, y + 32, 500, 128, { tl: 0, tr: 0, bl: 4, br: 4 })
-			.strokeRoundedRect(x, y + 32, 500, 128, { tl: 0, tr: 0, bl: 4, br: 4 })
+			.fillRoundedRect(0, 0, 500, 128, { tl: 0, tr: 0, bl: 4, br: 4 })
+			.strokeRoundedRect(0, 0, 500, 128, { tl: 0, tr: 0, bl: 4, br: 4 })
 			.setAlpha(0)
-			.setDepth(1);
+			.setDepth(2);
 
 		this.descriptionText = scene.add.text(x + 8, y + 68, ``, {
 				fontFamily: '"Kristen ITC", arial, serif',
@@ -42,13 +43,20 @@ export class HoverComponent {
 				strokeThickness: 2,
 			})
 			.setAlpha(0)
-			.setDepth(1);
+			.setDepth(2)
+			.setWordWrapWidth(500, true);
 
-		this.x = x;
-		this.y = y;
+		this.updateLayout(x, y, scale);
 	}
 
 	updateLayout(w: number, h: number, scale: number) {
+		const { width, height } = this.scene.scale;
+
+		if (w + 500 * scale > width)
+			w = width - (500 + 8) * scale;
+		if (h + 300 * scale > height)
+			h = height - 300 * scale;
+
 		this.titleContainer.setPosition(w, h);
 		this.titleContainer.setScale(scale);
 
@@ -67,20 +75,22 @@ export class HoverComponent {
 		this.descriptionText.setText(description);
 
 		this.descriptionContainer.clear()
-			.fillRoundedRect(this.x, this.y + 32, 500, this.descriptionText.height, { tl: 0, tr: 0, bl: 4, br: 4 })
-			.strokeRoundedRect(this.x, this.y + 32, 500, this.descriptionText.height, { tl: 0, tr: 0, bl: 4, br: 4 })
+			.fillRoundedRect(0, 32, 500, this.descriptionText.height, { tl: 0, tr: 0, bl: 4, br: 4 })
+			.strokeRoundedRect(0, 32, 500, this.descriptionText.height, { tl: 0, tr: 0, bl: 4, br: 4 })
 			.setAlpha(0)
 			.setDepth(1);
 	}
 
 	startDisplayTimer() {
 		this.timeout = setTimeout(() => {
-			this.titleContainer.setAlpha(1);
-			this.titleText.setAlpha(1);
+			this.titleContainer.setAlpha(1).setDepth(2);
+			this.titleText.setAlpha(1).setDepth(2);
 
-			this.descriptionContainer.setAlpha(1);
-			this.descriptionText.setAlpha(1);
-		}, 200);
+			this.descriptionContainer.setAlpha(1).setDepth(2);
+			this.descriptionText.setAlpha(1).setDepth(2);
+
+			this.scene.game.canvas.style.cursor = 'none';
+		}, 400);
 	}
 
 	clearDisplayTimer() {
@@ -91,6 +101,8 @@ export class HoverComponent {
 
 		this.descriptionContainer.setAlpha(0);
 		this.descriptionText.setAlpha(0);
+
+		this.scene.game.canvas.style.cursor = 'default';
 	}
 
 	destroy() {

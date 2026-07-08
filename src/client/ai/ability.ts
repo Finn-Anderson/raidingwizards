@@ -35,7 +35,7 @@ export class Ability {
 	}
 
 	display(owner: AI, x: number, y: number, scale: number, customInteract: boolean = false): {rectangle: Phaser.GameObjects.Rectangle, image: Phaser.GameObjects.Image, hoverComponent: HoverComponent} {
-		const hoverComponent = new HoverComponent(owner.scene, x, y);
+		const hoverComponent = new HoverComponent(owner.scene, x, y, scale);
 
 		let tint = 0xffffff;
 		if (this.type == 'attack') 
@@ -53,16 +53,20 @@ export class Ability {
 
 		const rectangle = owner.scene.add.rectangle(x, y, size, size, 0x333333).setStrokeStyle(2, 0x121212).setRounded(50).setScale(scale).setInteractive({useHandCursor: true})
 			.on('pointerover', () => { 
-				rectangle.setFillStyle(0xff5700); 
-				rectangle.setStrokeStyle(2, 0xe64e00);
+				if (!customInteract) {
+					rectangle.setFillStyle(0xff5700); 
+					rectangle.setStrokeStyle(2, 0xe64e00);
+				}
 
 				const text = this.getText(owner);
 				hoverComponent.setDescription(text.title, text.description);
 				hoverComponent.startDisplayTimer();
 			})
 			.on('pointerout', () => { 
-				rectangle.setFillStyle(0x333333); 
-				rectangle.setStrokeStyle(2, 0x121212); 
+				if (!customInteract) {
+					rectangle.setFillStyle(0x333333); 
+					rectangle.setStrokeStyle(2, 0x121212); 
+				}
 
 				hoverComponent.clearDisplayTimer();
 			});
@@ -72,8 +76,10 @@ export class Ability {
 		if (!customInteract) {
 			rectangle.on('pointerup', () => {
 				if (owner.scene instanceof MainMenu) {
-					if (owner.scene.abilitySelector == undefined)
+					if (!owner.scene.abilitySelector) {
 						owner.scene.abilitySelector = new AbilitySelector(owner, this);
+						hoverComponent.clearDisplayTimer();
+					}
 				}
 				else {
 					owner.scene.selectedAbility = this; // don't perform ability. Instead save ability as selected and glow all possible targets. Then perform ability on target select. Call function in game.

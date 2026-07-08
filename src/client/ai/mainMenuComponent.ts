@@ -72,13 +72,7 @@ export class MainMenuComponent {
 		this.owner.setupMouseOverAnim(this.costImage);
 		this.owner.setupMouseOverAnim(this.costText);
 
-		const ability1: Ability = this.owner.scene.registry.get('abilities')[this.owner.stats.ability1Index];
-		const display1 = ability1.display(this.owner, 4, 4, 0);
-		this.abilityDisplay.push(display1);
-
-		const ability2 = this.owner.scene.registry.get('abilities')[this.owner.stats.ability2Index];
-		const display2 = ability2.display(this.owner, 4, 4, 0);
-		this.abilityDisplay.push(display2);
+		this.regenerateAbilities();
 	}
 
 	updateMainMenuLayout(w: number, h: number, scale: number) {
@@ -153,6 +147,27 @@ export class MainMenuComponent {
 		}
 
 		this.costText.setText(this.owner.scene.abbrvNum(this.owner.getLevel()));
+	}
+
+	regenerateAbilities() {
+		this.abilityDisplay.forEach((element) => {
+			element.rectangle.destroy();
+			element.image.destroy();
+			element.hoverComponent.destroy();
+		});
+
+		this.abilityDisplay.length = 0;
+
+		const ability1: Ability = this.owner.scene.registry.get('abilities')[this.owner.stats.ability1Index];
+		const display1 = ability1.display(this.owner, 4, 4, 0);
+		this.abilityDisplay.push(display1);
+
+		const ability2 = this.owner.scene.registry.get('abilities')[this.owner.stats.ability2Index];
+		const display2 = ability2.display(this.owner, 4, 4, 0);
+		this.abilityDisplay.push(display2);
+
+		const { width, height } = this.owner.scene.scale;
+		this.owner.scene.updateLayout(width, height);
 	}
 
 	save() {

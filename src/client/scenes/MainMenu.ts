@@ -2,7 +2,7 @@ import { Scene, GameObjects } from 'phaser';
 import { DropdownList } from '../dropdown';
 import { Leaderboard } from '../leaderboard';
 import { AI } from '../ai/ai';
-import { AIAdder } from '../AIAdder';
+import { AIAdder } from '../aiAdder';
 import { AbilitySelector } from '../abilitySelector';
 
 export class MainMenu extends Scene {
@@ -19,7 +19,7 @@ export class MainMenu extends Scene {
 	buttons: AIAdder[];
 	
 	scaleFactor: number = 1;
-	abilitySelector: AbilitySelector | undefined;
+	abilitySelector: AbilitySelector | null = null;
 
 	constructor() {
 		super('MainMenu');
@@ -109,7 +109,7 @@ export class MainMenu extends Scene {
 
 		if (this.fight) {
 			this.fight.setPosition(width / 2, height * 0.9);
-			this.fight.setDisplaySize(96 * this.scaleFactor, 96 * this.scaleFactor);
+			this.fight.setDisplaySize(128 * this.scaleFactor, 128 * this.scaleFactor);
 		}
 
 		if (this.moneyImage) {
@@ -147,6 +147,9 @@ export class MainMenu extends Scene {
 			return;
 
 		this.buttons.forEach((element) => { element.updateLayout(width, height, this.scaleFactor); });
+
+		if (this.abilitySelector)
+			this.abilitySelector.updateLayout(width / 2 - 250 * this.scaleFactor, height / 2 - 310 * this.scaleFactor, this.scaleFactor);
 	}
 
  	updateMoneyText() {
