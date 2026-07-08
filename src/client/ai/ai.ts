@@ -28,7 +28,7 @@ export class AI extends Phaser.GameObjects.Sprite {
 		scene.add.existing(this);
 
 		this.identifier = String(texture);
-		this.stats = {health: 1, defence: 1, attack: 1, speed: 1, ability1Index: 0, ability2Index: 1};
+		this.stats = {health: 1, defence: 1, attack: 1, speed: 1, ability1Index: 0, ability2Index: 2};
 		this.debuffs = [];
 
 		this.MainMenuComponent = new MainMenuComponent(this);

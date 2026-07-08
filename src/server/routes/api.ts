@@ -30,7 +30,7 @@ api.get('/init', async (c) => {
 		var level = undefined;
 		var ai = [];
 		for (var i = 0; i < 1; i++)
-			ai.push({health: 1, defence: 1, attack: 1, speed: 1, ability1Index: 0, ability2Index: 1});
+			ai.push({health: 1, defence: 1, attack: 1, speed: 1, ability1Index: 0, ability2Index: 2});
 
 		redis.del(username + 'ai');
 		redis.del(username + 'money');

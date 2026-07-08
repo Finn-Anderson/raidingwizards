@@ -2,6 +2,8 @@ import { Scene, GameObjects } from 'phaser';
 import { DropdownList } from '../dropdown';
 import { Leaderboard } from '../leaderboard';
 import { AI } from '../ai/ai';
+import { AIAdder } from '../AIAdder';
+import { AbilitySelector } from '../abilitySelector';
 
 export class MainMenu extends Scene {
 	background: GameObjects.Image | null = null;
@@ -12,9 +14,12 @@ export class MainMenu extends Scene {
 	levelText: Phaser.GameObjects.Text;
 	dropdown: DropdownList;
 	leaderboard: Leaderboard;
+
 	wizards: AI[];
-	buttons: {button: Phaser.GameObjects.Rectangle, text: Phaser.GameObjects.Text, cost: Phaser.GameObjects.Text, costImg: Phaser.GameObjects.Image, index: number}[];
+	buttons: AIAdder[];
+	
 	scaleFactor: number = 1;
+	abilitySelector: AbilitySelector | undefined;
 
 	constructor() {
 		super('MainMenu');
@@ -67,63 +72,21 @@ export class MainMenu extends Scene {
 
 		this.leaderboard = new Leaderboard(this, width - 8, 8);
 
-		for (var i = 0; i < 6; i++) {
+		for (let i = 0; i < 6; i++) {
 			const x = i % 2 == 0 ? width / 4 : width / 2 + width / 4;
 			const y = height / 4 + Math.floor(i / 2) * height / 4;
 
 			if (this.registry.get('ai').length > i) {
-				const ai = new AI(this, x, y, 'player', 0);
+				const ai = new AI(this, x, y, 'player', i);
 				ai.create();
 				ai.setStats(this.registry.get('ai')[i]);
 
 				this.wizards.push(ai);
 			}
 			else {
-				const text = this.add.text(x, y - 128, `+`, {
-					fontFamily: '"Kristen ITC", arial, serif',
-					fontSize: 48,
-					color: '#ffffff',
-					stroke: '#f2f2f2',
-					strokeThickness: 2,
-				});
+				const aiAdder = new AIAdder(this, x, y, width, height, i);
 
-				const cost = this.add.text(x, y + 48, `10`, {
-					fontFamily: '"Kristen ITC", arial, serif',
-					fontSize: 48,
-					color: '#ffd700',
-					stroke: '#e6c200',
-					strokeThickness: 2,
-				});
-				
-				const costImg = this.add.image(x, y + 48 - cost.width, 'money').setOrigin(0);
-
-				const button = this.add.rectangle(x, y, 250, 250, 0x000000, 0)
-					.setInteractive({useHandCursor: true})
-					.on('pointerover', () => { text.setTint(0xff5700); })
-					.on('pointerout', () => { text.clearTint(); })
-					.on('pointerup', () => { 
-						const currentMoney = this.registry.get('money');
-						if (currentMoney < 10)
-							return;
-
-						const ai = new AI(this, x, y, 'player', i, 0);
-						ai.create();
-
-						this.buttons.at(i)?.button.destroy();
-						this.buttons.at(i)?.text.destroy();
-						this.buttons.at(i)?.cost.destroy();
-						this.buttons.splice(i, 1);
-
-						this.registry.set('money', currentMoney - 10);
-						this.updateMoneyText();
-
-						this.wizards.push(ai);
-						ai.MainMenuComponent.save();
-						
-						this.updateLayout(width, height);
-					});
-
-				this.buttons.push({button, text, cost, costImg, index: i});
+				this.buttons.push(aiAdder);
 			}
 		}
 		this.updateMoneyText();
@@ -183,22 +146,7 @@ export class MainMenu extends Scene {
 		if (this.registry.get('money') < 10)
 			return;
 
-		this.buttons.forEach((element) => {
-			const x = element.index % 2 == 0 ? width / 4 : width / 2 + width / 4;
-			const y = height / 4 + Math.floor(element.index / 2) * height / 4;
-
-			element.button.setDisplaySize(250 * this.scaleFactor, 250 * this.scaleFactor).updateDisplayOrigin();
-			element.button.setPosition(x, y);
-
-			element.text.setPosition(x, y - 128 * this.scaleFactor);
-			element.text.setScale(this.scaleFactor * 3);
-
-			element.cost.setPosition(x + (element.cost.width / 2) * this.scaleFactor, y + 48 * this.scaleFactor);
-			element.cost.setScale(this.scaleFactor);
-
-			element.costImg.setPosition(x - (element.cost.width / 2) * this.scaleFactor, y + (48 + 8) * this.scaleFactor);
-			element.costImg.setScale(this.scaleFactor);
-		});
+		this.buttons.forEach((element) => { element.updateLayout(width, height, this.scaleFactor); });
 	}
 
  	updateMoneyText() {

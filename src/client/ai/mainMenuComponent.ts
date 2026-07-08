@@ -2,6 +2,7 @@ import * as Phaser from 'phaser';
 import { MainMenu } from '../scenes/MainMenu';
 import { AI } from './ai';
 import { Ability } from './ability';
+import { HoverComponent } from './hoverComponent';
 
 export class MainMenuComponent {
 	owner: AI;
@@ -12,8 +13,7 @@ export class MainMenuComponent {
 	costImage: Phaser.GameObjects.Image;
 	costText: Phaser.GameObjects.Text;
 
-	abilityContainers: Phaser.GameObjects.Rectangle[] = [];
-	abilityImages: Phaser.GameObjects.Image[] = [];
+	abilityDisplay: {rectangle: Phaser.GameObjects.Rectangle, image: Phaser.GameObjects.Image, hoverComponent: HoverComponent}[] = [];
 
 	constructor(ai: AI) {
 		this.owner = ai;
@@ -74,13 +74,11 @@ export class MainMenuComponent {
 
 		const ability1: Ability = this.owner.scene.registry.get('abilities')[this.owner.stats.ability1Index];
 		const display1 = ability1.display(this.owner, 4, 4, 0);
-		this.abilityContainers.push(display1.rectangle);
-		this.abilityImages.push(display1.image);
+		this.abilityDisplay.push(display1);
 
 		const ability2 = this.owner.scene.registry.get('abilities')[this.owner.stats.ability2Index];
 		const display2 = ability2.display(this.owner, 4, 4, 0);
-		this.abilityContainers.push(display2.rectangle);
-		this.abilityImages.push(display2.image);
+		this.abilityDisplay.push(display2);
 	}
 
 	updateMainMenuLayout(w: number, h: number, scale: number) {
@@ -103,16 +101,18 @@ export class MainMenuComponent {
 		this.costText.setPosition(w + 128 * scale, h + 100 * scale);
 		this.costText.setScale(scale);
 
-		for (var i = 0; i < 2; i++) {
-			const width = w + (40 * (i * 2 - 1) * scale - 4);
+		this.abilityDisplay.forEach((element, index) => {
+			const width = w + (40 * (index * 2 - 1) * scale - 4);
 			const height = h + 140 * scale;
 
-			this.abilityContainers[i]!.setPosition(width, height);
-			this.abilityContainers[i]!.setScale(scale);
+			element.rectangle.setPosition(width, height);
+			element.rectangle.setScale(scale);
 
-			this.abilityImages[i]!.setPosition(width, height);
-			this.abilityImages[i]!.setScale(scale);
-		}
+			element.image.setPosition(width, height);
+			element.image.setScale(scale);
+
+			element.hoverComponent.updateLayout(width, height, scale);
+		});
 	}
 
 	upgradeStat(name: String) {

@@ -2,6 +2,7 @@ import * as Phaser from 'phaser';
 import { Game } from '../scenes/Game';
 import { AI } from './ai';
 import { Ability } from './ability';
+import { HoverComponent } from './hoverComponent';
 
 export class GameComponent {
 	owner: AI;
@@ -16,8 +17,7 @@ export class GameComponent {
 	speedBarContainer: Phaser.GameObjects.Rectangle;
 	speedBar: Phaser.GameObjects.Rectangle;
 
-	abilityContainers: Phaser.GameObjects.Rectangle[];
-	abilityImages: Phaser.GameObjects.Image[];
+	abilityDisplay: {rectangle: Phaser.GameObjects.Rectangle, image: Phaser.GameObjects.Image, hoverComponent: HoverComponent}[] = [];
 
 	constructor(ai: AI) {
 		this.owner = ai;
@@ -26,28 +26,28 @@ export class GameComponent {
 	createGame() {
 		const ability1: Ability = this.owner.scene.registry.get('abilities')[this.owner.stats.ability1Index];
 		const display1 = ability1.display(this.owner, 4, 4, 0);
-		this.abilityContainers.push(display1.rectangle);
-		this.abilityImages.push(display1.image);
+		this.abilityDisplay.push(display1);
 
 		const ability2 = this.owner.scene.registry.get('abilities')[this.owner.stats.ability2Index];
 		const display2 = ability2.display(this.owner, 4, 4, 0);
-		this.abilityContainers.push(display2.rectangle);
-		this.abilityImages.push(display2.image);
+		this.abilityDisplay.push(display2);
 	}
 
 	updateGameLayout(w: number, h: number, scale: number) {
-		for (var i = 0; i < 2; i++) {
-			const width = w + (64 * (i * 2 - 1) * scale);
+		this.abilityDisplay.forEach((element, index) => {
+			const width = w + (64 * (index * 2 - 1) * scale);
 			const height = h;
 
-			this.abilityContainers[i]!.setPosition(width, height);
-			if (this.abilityContainers[i]!.scale > 0)
-				this.abilityContainers[i]!.setScale(scale);
+			element.rectangle.setPosition(width, height);
+			if (element.rectangle.scale > 0)
+				element.rectangle.setScale(scale);
 
-			this.abilityImages[i]!.setPosition(width, height);
-			if (this.abilityImages[i]!.scale > 0)
-				this.abilityImages[i]!.setScale(scale * 5);
-		}
+			element.image.setPosition(width, height);
+			if (element.image.scale > 0)
+				element.image.setScale(scale);
+
+			element.hoverComponent.updateLayout(width, height, scale);
+		});
 	}
 
 	turn(targets: AI[], allies: AI[], auto: boolean) {
@@ -89,8 +89,7 @@ export class GameComponent {
 		else {
 			this.owner.play('idle');
 
-			this.abilityContainers.forEach((element) => { element.setScale(this.owner.storedScale); });
-			this.abilityImages.forEach((element) => { element.setScale(this.owner.storedScale * 5); });
+			this.abilityDisplay.forEach((element) => { element.rectangle.setScale(this.owner.storedScale); element.image.setScale(this.owner.storedScale * 5) });
 		}
 
 		this.owner.debuffs.length = 0;
