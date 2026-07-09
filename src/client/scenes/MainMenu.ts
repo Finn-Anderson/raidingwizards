@@ -1,4 +1,4 @@
-import { Scene, GameObjects } from 'phaser';
+import { Scene } from 'phaser';
 import { DropdownList } from '../dropdown';
 import { Leaderboard } from '../leaderboard';
 import { AI } from '../ai/ai';
@@ -6,32 +6,26 @@ import { AIAdder } from '../aiAdder';
 import { AbilitySelector } from '../abilitySelector';
 
 export class MainMenu extends Scene {
-	background: GameObjects.Image | null = null;
-	fight: GameObjects.Sprite | null = null;
-	moneyImage: GameObjects.Image | null = null;
-	levelImage: GameObjects.Image | null = null;
+	background: Phaser.GameObjects.Image;
+	fight: Phaser.GameObjects.Sprite;
+
+	moneyImage: Phaser.GameObjects.Image;
 	moneyText: Phaser.GameObjects.Text;
+	
+	levelImage: Phaser.GameObjects.Image;
 	levelText: Phaser.GameObjects.Text;
+
 	dropdown: DropdownList;
 	leaderboard: Leaderboard;
 
-	wizards: AI[];
-	buttons: AIAdder[];
+	wizards: AI[] = [];
+	buttons: AIAdder[] = [];
 	
 	scaleFactor: number = 1;
 	abilitySelector: AbilitySelector | null = null;
 
 	constructor() {
 		super('MainMenu');
-	}
-
-	init(): void {
-		this.background = null;
-		this.moneyImage = null;
-		this.levelImage = null;
-		this.fight = null;
-		this.wizards = [];
-		this.buttons = [];
 	}
 
 	create() {
@@ -78,8 +72,8 @@ export class MainMenu extends Scene {
 
 			if (this.registry.get('ai').length > i) {
 				const ai = new AI(this, x, y, 'player', i);
-				ai.create();
 				ai.setStats(this.registry.get('ai')[i]);
+				ai.create();
 
 				this.wizards.push(ai);
 			}
@@ -91,7 +85,6 @@ export class MainMenu extends Scene {
 		}
 		this.updateMoneyText();
 		
-		// Setup responsive layout
 		this.updateLayout(width, height);
 		this.scale.on('resize', (gameSize: Phaser.Structs.Size) => {
 			const { width, height } = gameSize;
@@ -107,30 +100,20 @@ export class MainMenu extends Scene {
 
 		this.scaleFactor = Math.min(height / 1600, 1);
 
-		if (this.fight) {
-			this.fight.setPosition(width / 2, height * 0.9);
-			this.fight.setDisplaySize(128 * this.scaleFactor, 128 * this.scaleFactor);
-		}
+		this.fight.setPosition(width / 2, height * 0.9);
+		this.fight.setDisplaySize(128 * this.scaleFactor, 128 * this.scaleFactor);
 
-		if (this.moneyImage) {
-			this.moneyImage.setPosition(8 * this.scaleFactor, 88 * this.scaleFactor);
-			this.moneyImage.setScale(this.scaleFactor);
-		}
+		this.moneyImage.setPosition(8 * this.scaleFactor, 88 * this.scaleFactor);
+		this.moneyImage.setScale(this.scaleFactor);
 
-		if (this.moneyText) {
-			this.moneyText.setPosition(60 * this.scaleFactor, 80 * this.scaleFactor);
-			this.moneyText.setScale(this.scaleFactor);
-		}
+		this.moneyText.setPosition(60 * this.scaleFactor, 80 * this.scaleFactor);
+		this.moneyText.setScale(this.scaleFactor);
 
-		if (this.levelImage) {
-			this.levelImage.setPosition(8 * this.scaleFactor, 144 * this.scaleFactor);
-			this.levelImage.setScale(this.scaleFactor);
-		}
+		this.levelImage.setPosition(8 * this.scaleFactor, 144 * this.scaleFactor);
+		this.levelImage.setScale(this.scaleFactor);
 
-		if (this.levelText) {
-			this.levelText.setPosition(60 * this.scaleFactor, 136 * this.scaleFactor);
-			this.levelText.setScale(this.scaleFactor);
-		}
+		this.levelText.setPosition(60 * this.scaleFactor, 136 * this.scaleFactor);
+		this.levelText.setScale(this.scaleFactor);
 
 		this.dropdown.updateLayout(8 * this.scaleFactor, 8 * this.scaleFactor, this.scaleFactor);
 

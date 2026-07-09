@@ -3,13 +3,14 @@ import { MainMenu } from '../scenes/MainMenu';
 import { Game } from '../scenes/Game';
 import { MainMenuComponent } from './mainMenuComponent'
 import { GameComponent } from './gameComponent'
+import { Ability } from './ability';
 
 export class AI extends Phaser.GameObjects.Sprite {
 	override scene: MainMenu | Game;
 	identifier: string;
 
 	stats: {health: number, defence: number, attack: number, speed: number, ability1Index: number, ability2Index: number}; // item?
-	debuffs: {debuff: string, applier: AI}[];
+	debuffs: {ability: Ability, applier: AI}[];
 
 	index: number = 0;
 	storedScale: number = 1;
@@ -35,7 +36,7 @@ export class AI extends Phaser.GameObjects.Sprite {
 		this.GameComponent = new GameComponent(this);
 	}
 
-	create() {
+	create(bEnemy: boolean = false) {
 		this.scene.anims.create({
 			key: 'idle',
 			frames: this.scene.anims.generateFrameNumbers(this.identifier, { start: 0, end: 1 }),
@@ -50,12 +51,13 @@ export class AI extends Phaser.GameObjects.Sprite {
 			repeat: 0
 		});
 
-		if (this.scene instanceof MainMenu)
+		if (this.scene instanceof MainMenu) {
 			this.MainMenuComponent.createMainMenu();
+			this.setupMouseOverAnim(this);
+		}
 		else
-			this.GameComponent.createGame();
+			this.GameComponent.createGame(bEnemy);
 
-		this.setupMouseOverAnim(this);
 		this.setInteractive();
 	}
 

@@ -11,7 +11,7 @@ export class MainMenuComponent {
 	statsIcons: Phaser.GameObjects.Image[] = [];
 	statsText: Phaser.GameObjects.Text[] = [];
 	costImage: Phaser.GameObjects.Image;
-	costText: Phaser.GameObjects.Text;
+	costText: Phaser.GameObjects.Text | null = null;
 
 	abilityDisplay: {rectangle: Phaser.GameObjects.Rectangle, image: Phaser.GameObjects.Image, hoverComponent: HoverComponent}[] = [];
 
@@ -22,20 +22,29 @@ export class MainMenuComponent {
 	createMainMenu() {
 		for (var i = 0; i < 4; i++) {
 			let str = '';
-			if (i == 0)
+			let num = 1;
+			if (i == 0) {
 				str = 'attack';
-			else if (i == 1)
+				num = this.owner.stats.attack;
+			}
+			else if (i == 1) {
 				str = 'defence';
-			else if (i == 2)
+				num = this.owner.stats.defence;
+			}
+			else if (i == 2) {
 				str = 'health';
-			else
+				num = this.owner.stats.health;
+			}
+			else {
 				str = 'speed';
+				num = this.owner.stats.speed;
+			}
 
 			const textImg = this.owner.scene.add.image(4, 4, str).setOrigin(0).setInteractive();
 			this.statsIcons.push(textImg);
 
 			const text = this.owner.scene.add
-				.text(4, 4, `1`, {
+				.text(4, 4, `${this.owner.scene.abbrvNum(num)}`, {
 					fontFamily: '"Kristen ITC", arial, serif',
 					fontSize: 48,
 					color: '#ffffff',
@@ -92,8 +101,8 @@ export class MainMenuComponent {
 		this.costImage.setPosition(w + 72 * scale, h + 108 * scale);
 		this.costImage.setScale(scale);
 
-		this.costText.setPosition(w + 128 * scale, h + 100 * scale);
-		this.costText.setScale(scale);
+		this.costText?.setPosition(w + 128 * scale, h + 100 * scale);
+		this.costText?.setScale(scale);
 
 		this.abilityDisplay.forEach((element, index) => {
 			const width = w + (40 * (index * 2 - 1) * scale - 4);
@@ -146,7 +155,7 @@ export class MainMenuComponent {
 			this.upgradeIcons[i]!.setScale(bShow ? this.owner.storedScale : 0);
 		}
 
-		this.costText.setText(this.owner.scene.abbrvNum(this.owner.getLevel()));
+		this.costText?.setText(this.owner.scene.abbrvNum(this.owner.getLevel()));
 	}
 
 	regenerateAbilities() {

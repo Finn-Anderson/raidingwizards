@@ -53,7 +53,7 @@ export class Ability {
 
 		const rectangle = owner.scene.add.rectangle(x, y, size, size, 0x333333).setStrokeStyle(2, 0x121212).setRounded(50).setScale(scale).setInteractive({useHandCursor: true})
 			.on('pointerover', () => { 
-				if (!customInteract) {
+				if (!customInteract || owner.scene instanceof Game) {
 					rectangle.setFillStyle(0xff5700); 
 					rectangle.setStrokeStyle(2, 0xe64e00);
 				}
@@ -63,7 +63,7 @@ export class Ability {
 				hoverComponent.startDisplayTimer();
 			})
 			.on('pointerout', () => { 
-				if (!customInteract) {
+				if (!customInteract || owner.scene instanceof Game) {
 					rectangle.setFillStyle(0x333333); 
 					rectangle.setStrokeStyle(2, 0x121212); 
 				}
@@ -82,7 +82,16 @@ export class Ability {
 					}
 				}
 				else {
-					owner.scene.selectedAbility = this; // don't perform ability. Instead save ability as selected and glow all possible targets. Then perform ability on target select. Call function in game.
+					owner.scene.selectedAbility = this;
+					// add glow to possible targets based on ability type.
+
+					owner.GameComponent.abilityDisplay.forEach((element) => { 
+						element.rectangle.setFillStyle(0x333333); 
+						element.rectangle.setStrokeStyle(2, 0x121212);
+					});
+
+					rectangle.setFillStyle(0xff5700); 
+					rectangle.setStrokeStyle(2, 0xe64e00);
 				}
 			});
 		}
@@ -90,20 +99,22 @@ export class Ability {
 		return {rectangle, image, hoverComponent};
 	}
 
-	performAbility(owner: AI, mainTarget: AI | undefined, targets: AI[]) {
+	performAbility(owner: AI, mainTarget: AI | null, targets: AI[]) {
 		owner.GameComponent.abilityDisplay.forEach((element) => { element.rectangle.setScale(0); element.image.setScale(0) });
 
+		for (var i = targets.length - 1; i > -1; i--) {
+			if ((this.type == 'health' && targets[i]!.GameComponent.health == targets[i]!.GameComponent.maxHealth) || targets[i]!.GameComponent.health == 0)
+				targets.splice(i, 1);
+		}
+
 		for (var i = 0; i < this.numProjectiles; i++) {
-			let target = mainTarget;
-			if (i != 0 || target == undefined)
-				target = targets[Math.round(Math.random() * (targets.length - 1))] as AI;
+			if (i != 0)
+				mainTarget = targets[Math.round(Math.random() * (targets.length - 1))] as AI;
 
-			this.use(owner, target as AI);
+			this.use(owner, mainTarget as AI);
 
-			if (target!.GameComponent.health <= 0)
-				targets = targets.filter(item => item !== target);
-			else if (this.type == 'health' && target!.GameComponent.health == target!.GameComponent.maxHealth)
-				targets = targets.filter(item => item !== target);
+			if (mainTarget!.GameComponent.health <= 0 || (this.type == 'health' && mainTarget!.GameComponent.health == mainTarget!.GameComponent.maxHealth))
+				targets = targets.filter(item => item !== mainTarget);
 
 			if (targets.length == 0)
 				break;
@@ -115,7 +126,7 @@ export class Ability {
 			owner.stop();
 			owner.setFrame(0);
 
-			// run function to play next turn;
+			(owner.scene as Game).doTurn(owner);
 		}, 200);
 	}
 
@@ -132,7 +143,7 @@ export class Ability {
 		let defence = target.stats.defence;
 
 		for (const element of target.debuffs) {
-			if (element.debuff != 'weaken')
+			if (element.ability.debuff != 'weaken')
 				continue;
 
 			defence = defence / 2;
@@ -145,8 +156,10 @@ export class Ability {
 		
 		owner.GameComponent.takeHealth(damage / defence);
 
-		if (this.debuff != '')
-			target.debuffs.push({debuff: this.debuff, applier: owner});
+		if (this.debuff != '') {
+			target.debuffs.push({ability: this, applier: owner});
+			target.GameComponent.displayDebuffs();
+		}
 	}
 
 	getText(owner: AI): {title: string, description: string} {

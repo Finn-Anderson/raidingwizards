@@ -21,13 +21,19 @@ export class Preloader extends Scene {
   	}
 
   	preload() {
-		//  Load the assets for the game - Replace with your own assets
 		this.load.setPath('../assets/');
 
+		// Spritesheets
 		this.load.spritesheet('player', 'ai/player/player-spritesheet.png', {frameWidth: 100, frameHeight: 100});
+		this.load.spritesheet('enemy', 'ai/enemy/enemy1-spritesheet.png', {frameWidth: 100, frameHeight: 100});
+
+		// Main Menu
 		this.load.image('fight', 'fight.png');
 		this.load.image('money', 'coin.png');
 		this.load.image('level', 'level.png');
+
+		// Game
+		// repeat: circle with arrow; infinity: inifinity symbol; skip: 2-3 arrows
 
 		// AI
 		this.load.image('attack', 'attack.png');
@@ -42,6 +48,7 @@ export class Preloader extends Scene {
 		this.load.image('taunt', 'abilities/taunt.png');
 		this.load.image('multiHeal', 'abilities/multiHeal.png');
 		this.load.image('slow', 'abilities/slow.png');
+		this.load.image('revive', 'abilities/revive.png');
   	}
 
   	create() {
@@ -80,7 +87,8 @@ export class Preloader extends Scene {
 		abilities.push(new Ability('Riposte', 'defence', 'defence', 1, 0.5, 1));
 		abilities.push(new Ability('Taunt', 'defence', 'taunt', 3, 0, 1, 'taunt', 'Taunts enemy to target last taunter'));
 		abilities.push(new Ability('Heal', 'health', 'health', 1, 0.5, 1));
-		abilities.push(new Ability('Multi-Heal', 'health', 'multiHeal', 4, 5, 1));
+		abilities.push(new Ability('Multi-Heal', 'health', 'multiHeal', 4, 1, 5));
+		abilities.push(new Ability('Revive', 'health', 'revive', 7, 5, 1));
 		abilities.push(new Ability('Slow', 'speed', 'slow', 3, 0, 1, 'slow', 'Halves enemy speed (stacks)'));
 
 		this.registry.set('abilities', abilities);

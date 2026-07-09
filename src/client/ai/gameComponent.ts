@@ -18,42 +18,66 @@ export class GameComponent {
 	speedBar: Phaser.GameObjects.Rectangle;
 
 	abilityDisplay: {rectangle: Phaser.GameObjects.Rectangle, image: Phaser.GameObjects.Image, hoverComponent: HoverComponent}[] = [];
+	debuffDisplay: {rectangle: Phaser.GameObjects.Rectangle, image: Phaser.GameObjects.Image, hoverComponent: HoverComponent}[] = [];
 
 	constructor(ai: AI) {
 		this.owner = ai;
 	}
 
-	createGame() {
-		const ability1: Ability = this.owner.scene.registry.get('abilities')[this.owner.stats.ability1Index];
-		const display1 = ability1.display(this.owner, 4, 4, 0);
-		this.abilityDisplay.push(display1);
+	createGame(bEnemy: boolean = false) {
+		if (!bEnemy) {
+			const ability1: Ability = this.owner.scene.registry.get('abilities')[this.owner.stats.ability1Index];
+			const display1 = ability1.display(this.owner, 4, 4, 0);
+			this.abilityDisplay.push(display1);
 
-		const ability2 = this.owner.scene.registry.get('abilities')[this.owner.stats.ability2Index];
-		const display2 = ability2.display(this.owner, 4, 4, 0);
-		this.abilityDisplay.push(display2);
+			const ability2 = this.owner.scene.registry.get('abilities')[this.owner.stats.ability2Index];
+			const display2 = ability2.display(this.owner, 4, 4, 0);
+			this.abilityDisplay.push(display2);
+		}
 	}
 
 	updateGameLayout(w: number, h: number, scale: number) {
 		this.abilityDisplay.forEach((element, index) => {
-			const width = w + (64 * (index * 2 - 1) * scale);
-			const height = h;
+			const height = this.owner.scene.scale.height;
 
-			element.rectangle.setPosition(width, height);
+			const x = (32 + 64 * (index * 2 - 1) * scale);
+			const y = height - 32 * scale;
+
+			element.rectangle.setPosition(x, y);
 			if (element.rectangle.scale > 0)
 				element.rectangle.setScale(scale);
 
-			element.image.setPosition(width, height);
+			element.image.setPosition(x, y);
 			if (element.image.scale > 0)
 				element.image.setScale(scale);
 
-			element.hoverComponent.updateLayout(width, height, scale);
+			element.hoverComponent.updateLayout(x, y, scale);
+		});
+
+		const halfPoint = this.debuffDisplay.length - 1;
+		this.debuffDisplay.forEach((element, index) => {
+			const x = w + (64 * (index - halfPoint)) * scale;
+
+			element.rectangle.setPosition(x, h);
+			element.rectangle.setScale(scale);
+
+			element.image.setPosition(x, h);
+			element.image.setScale(scale);
+
+			element.hoverComponent.updateLayout(x, h, scale);
 		});
 	}
 
 	turn(targets: AI[], allies: AI[], auto: boolean) {
+		if (this.health == 0) {
+			(this.owner.scene as Game).doTurn(this.owner);
+
+			return;
+		}
+
 		let speed = this.owner.stats.speed;
 		for (const element of this.owner.debuffs) {
-			if (element.debuff != 'slow')
+			if (element.ability.debuff != 'slow')
 				continue;
 
 			speed = speed / 2;
@@ -65,10 +89,21 @@ export class GameComponent {
 			return;
 
 		this.stamina -= this.maxStamina;
+		
+		let ability1: Ability = this.owner.scene.registry.get('abilities')[this.owner.stats.ability1Index];
+		let ability2: Ability = this.owner.scene.registry.get('abilities')[this.owner.stats.ability2Index];
+		let ability: Ability = ability1;
 
-		let mainTarget: AI | undefined = undefined;
+		if (ability1.cooldown > 0 && ability2.cooldown > 0) {
+			this.owner.debuffs.length = 0;
+			this.displayDebuffs();
+
+			return;
+		}
+
+		let mainTarget: AI | null = null;
 		for (const element of this.owner.debuffs) {
-			if (element.debuff != 'taunt')
+			if (element.ability.debuff != 'taunt')
 				continue;
 
 			mainTarget = element.applier;
@@ -76,13 +111,29 @@ export class GameComponent {
 		}
 
 		if (auto) {
-			let ability: Ability = this.owner.scene.registry.get('abilities')[this.owner.stats.ability1Index]; // calculate index based on cooldown timer i.e. if ability1 takes 4 turns to cooldown and ability2 takes 1, do ability1 first
+			if (ability1.cooldown > 0)
+				ability = ability2;
+			else if (ability2.cooldown == 0 && ability2.turns > ability1.turns)
+				ability = ability2;
 
-			if (mainTarget == undefined) {
-				// loop through targets and find most optimal target
-				// if ability is debuff, don't do if all enemy's have debuff.
-				// if ability is health, heal allies.
+			if (!mainTarget) {
+				mainTarget = this.selectTarget(ability, targets, allies);
+
+				if (!mainTarget) {
+					ability = ability == ability1 ? ability2 : ability1;
+					this.selectTarget(ability, targets, allies);
+				}
 			}
+
+			if (!mainTarget) {
+				this.owner.debuffs.length = 0;
+				this.displayDebuffs();
+
+				return;
+			}
+
+			if (ability.type == 'health')
+				targets = allies;
 
 			ability.performAbility(this.owner, mainTarget, targets);
 		}
@@ -93,6 +144,7 @@ export class GameComponent {
 		}
 
 		this.owner.debuffs.length = 0;
+		this.displayDebuffs();
 	}
 
 	takeHealth(damage: number) {
@@ -112,9 +164,59 @@ export class GameComponent {
 
 			if (this.health > 0)
 				return;
-			
-			this.owner.scene.wizards = this.owner.scene.wizards.filter(item => item !== this.owner);
-			this.owner.destroy();
+
+			this.stamina = 0;
 		}, 200);
+	}
+
+	selectTarget(ability: Ability, targets: AI[], allies: AI[]): AI | null {
+		if (ability.debuff != '') {
+			for (var i = 0; i < targets.length; i++) {
+				let bContainsDebuff: boolean = false;
+				for (var j = 0; j < targets[i]!.debuffs.length; j++) {
+					if (targets[i]!.debuffs[j]!.ability != ability)
+						continue;
+
+					bContainsDebuff = true;
+					break;
+				}
+
+				if (bContainsDebuff)
+					continue;
+
+				return targets[i] as AI;
+			}
+		}
+		else if (ability.type == 'health') {
+			for (var i = 0; i < allies.length; i++) {
+				if (allies[i]!.GameComponent.health == allies[i]!.GameComponent.maxHealth || (ability.name == 'revive' && allies[i]!.GameComponent.health > 0))
+					continue;
+
+				return targets[i] as AI;
+			}
+		}
+		else {
+			return targets[Math.round(Math.random() * (targets.length - 1))] as AI;
+		}
+
+		return null;
+	}
+
+	displayDebuffs() {
+		this.debuffDisplay.forEach((element) => {
+			element.rectangle.destroy();
+			element.image.destroy();
+			element.hoverComponent.destroy();
+		});
+
+		this.debuffDisplay.length = 0;
+
+		this.owner.debuffs.forEach((element) => {
+			const display1 = element.ability.display(this.owner, 4, 4, this.owner.storedScale);
+			this.debuffDisplay.push(display1);
+		});
+
+		const { width, height } = this.owner.scene.scale;
+		this.owner.scene.updateLayout(width, height);
 	}
 }
