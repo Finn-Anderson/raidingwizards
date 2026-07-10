@@ -2,6 +2,7 @@ import { Scene } from 'phaser';
 import * as Phaser from 'phaser';
 import { AI } from '../ai/ai';
 import { Ability } from '../ai/ability';
+import { NumberResponse } from '../../shared/api';
 
 export class Game extends Scene {
 	background: Phaser.GameObjects.Image;
@@ -9,11 +10,22 @@ export class Game extends Scene {
 	damageImage: Phaser.GameObjects.Image;
 	damageText: Phaser.GameObjects.Text;
 
-	wizards: AI[] = [];
-	enemy: AI;
+	skipContainer: Phaser.GameObjects.Rectangle;
+	skipImage: Phaser.GameObjects.Image;
 
-	selectedAbility: Ability;
-	auto: boolean = false;
+	loopContainer: Phaser.GameObjects.Rectangle;
+	loopImage: Phaser.GameObjects.Image; // In order: single, loop, infinity
+
+	autoContainer: Phaser.GameObjects.Rectangle;
+	autoText: Phaser.GameObjects.Text;
+
+	gameOverOverlay: Phaser.GameObjects.Rectangle;
+	gameOverText: Phaser.GameObjects.Text;
+
+	wizards: AI[] = [];
+	enemy: AI | null = null;
+
+	selectedAbility: Ability | null = null;
 	selectedAI: AI;
 
 	level: number = 0;
@@ -29,8 +41,7 @@ export class Game extends Scene {
 
 		this.registry.set('damage', 0);
 
-		this.damageImage = this.add.image(4, 4, 'attack').setOrigin(0).setTint(0xff0029);
-
+		this.damageImage = this.add.image(0, 0, 'attack').setOrigin(0).setTint(0xff0029);
 		this.damageText = this.add
 			.text(4, 4, `${this.registry.get('damage')}`, {
 				fontFamily: '"Kristen ITC", arial, serif',
@@ -47,6 +58,21 @@ export class Game extends Scene {
 			const ai = new AI(this, x, y, 'player', i);
 			ai.setStats(this.registry.get('ai')[i]);
 			ai.create();
+			ai.enableFilters().setInteractive({ useHandCursor: true });
+			ai.on('pointerup', () => {
+				if (!this.selectedAbility)
+					return;
+
+				this.selectedAbility.performAbility(this.selectedAI, ai, this.wizards);
+
+				this.selectedAbility = null;
+
+				let aiList: AI[] = this.wizards;
+				aiList.push(this.enemy as AI);
+				aiList.forEach((element) => {
+					element.filters?.external.clear();
+				});
+			});
 
 			this.wizards.push(ai);
 
@@ -56,6 +82,130 @@ export class Game extends Scene {
 		this.level = Math.floor(this.level * 0.9);
 
 		this.spawnEnemy();
+
+		this.skipContainer = this.add.rectangle(0, 0, 112, 112, 0x333333).setStrokeStyle(2, 0x121212).setRounded(48).setInteractive({useHandCursor: true}).setScale(0)
+			.on('pointerover', () => { 
+				this.skipContainer.setFillStyle(0xff5700); 
+				this.skipContainer.setStrokeStyle(2, 0xe64e00);
+			})
+			.on('pointerout', () => { 
+				this.skipContainer.setFillStyle(0x333333); 
+				this.skipContainer.setStrokeStyle(2, 0x121212); 
+			})
+			.on('pointerup', () => {
+				this.selectedAI.stop();
+				this.selectedAI.setFrame(0);
+
+				this.selectedAI.GameComponent.abilityDisplay.forEach((element) => { element.rectangle.setScale(0); element.image.setScale(0) });
+				this.skipContainer.setScale(0);
+				this.skipImage.setScale(0);
+
+				this.doTurn(this.selectedAI);
+			});
+		this.skipImage = this.add.image(0, 0, 'skip').setScale(0);
+
+		let fill = 0x333333;
+		let stroke = 0x121212;
+		if (this.registry.get('auto')) {
+			fill = 0xff5700;
+			stroke = 0xe64e00;
+		}
+
+		this.loopContainer = this.add.rectangle(0, 0, 112, 112, fill).setStrokeStyle(2, stroke).setRounded(48).setInteractive({useHandCursor: true})
+			.on('pointerover', () => { 
+				if (this.registry.get('loop'))
+					return;
+
+				this.loopContainer.setFillStyle(0xff5700); 
+				this.loopContainer.setStrokeStyle(2, 0xe64e00);
+			})
+			.on('pointerout', () => { 
+				if (this.registry.get('loop'))
+					return;
+				
+				this.loopContainer.setFillStyle(0x333333); 
+				this.loopContainer.setStrokeStyle(2, 0x121212); 
+			})
+			.on('pointerup', () => {
+				let loop = !this.registry.get('loop');
+
+				if (loop) {
+					this.loopContainer.setFillStyle(0xff5700);
+					this.loopContainer.setStrokeStyle(2, 0xe64e00);
+				}
+				else {
+					this.loopContainer.setFillStyle(0x333333);
+					this.loopContainer.setStrokeStyle(2, 0x121212);
+				}
+
+				this.registry.set('loop', loop);
+			});
+		this.loopImage = this.add.image(0, 0, 'loop');
+
+		fill = 0x333333;
+		stroke = 0x121212;
+		if (this.registry.get('auto')) {
+			fill = 0xff5700;
+			stroke = 0xe64e00;
+		}
+
+		this.autoContainer = this.add.rectangle(0, 0, 112, 112, fill).setStrokeStyle(2, stroke).setRounded(48).setInteractive({useHandCursor: true})
+			.on('pointerover', () => { 
+				if (this.registry.get('auto'))
+					return;
+
+				this.autoContainer.setFillStyle(0xff5700); 
+				this.autoContainer.setStrokeStyle(2, 0xe64e00);
+			})
+			.on('pointerout', () => { 
+				if (this.registry.get('auto'))
+					return;
+
+				this.autoContainer.setFillStyle(0x333333); 
+				this.autoContainer.setStrokeStyle(2, 0x121212); 
+			})
+			.on('pointerup', () => {
+				let auto = !this.registry.get('auto');
+
+				if (auto) {
+					this.autoContainer.setFillStyle(0xff5700);
+					this.autoContainer.setStrokeStyle(2, 0xe64e00);
+				}
+				else {
+					this.autoContainer.setFillStyle(0x333333);
+					this.autoContainer.setStrokeStyle(2, 0x121212);
+				}
+
+				if (auto && this.selectedAI != this.enemy) {
+					let targets: AI[] = [this.enemy as AI];
+					let allies: AI[] = this.wizards;
+
+					this.selectedAI.GameComponent.turn(targets, allies, auto);
+				}
+
+				this.registry.set('auto', auto);
+			});
+		this.autoText = this.add
+			.text(0, 0, `auto`, {
+				fontFamily: '"Kristen ITC", arial, serif',
+				fontSize: 30,
+				color: '#ffffff',
+				stroke: '#f2f2f2',
+				strokeThickness: 2,
+			}).setOrigin(0);
+
+		this.gameOverOverlay = this.add.rectangle(0, 0, width, height, 0xff0029, 0).setOrigin(0)
+			.on('pointerup', () => {
+				this.scene.start('MainMenu');
+			});
+		this.gameOverText = this.add
+			.text(width / 2, height / 2, `Game Over`, {
+				fontFamily: '"Kristen ITC", arial, serif',
+				fontSize: 72,
+				color: '#ffffff',
+				stroke: '#f2f2f2',
+				strokeThickness: 2,
+			}).setAlpha(0);
 
 		this.updateLayout(width, height);
 		this.scale.on('resize', (gameSize: Phaser.Structs.Size) => {
@@ -72,7 +222,7 @@ export class Game extends Scene {
     	if (this.background)
       		this.background.setDisplaySize(width, height);
 
-		const scaleFactor = Math.min(Math.min(width / 1024, height / 768), 1);
+		const scaleFactor = Math.min(height / 1600, 1);
 
 		this.damageImage.setPosition(8 * scaleFactor, 16 * scaleFactor);
 		this.damageImage.setScale(scaleFactor * 1.5);
@@ -87,8 +237,38 @@ export class Game extends Scene {
 			ai.updateLayout(x, y, scaleFactor);
 		});
 
-		this.enemy.setPosition(width - 8, height / 2);
-		this.enemy.setScale(scaleFactor * 4);
+		this.enemy!.setPosition(width - 8, height / 2);
+		this.enemy!.setScale(scaleFactor * 4);
+
+		this.skipContainer.setPosition(360 * scaleFactor, height - 64 * scaleFactor);
+		if (this.skipContainer.scale > 0)
+			this.skipContainer.setScale(scaleFactor);
+
+		this.skipImage.setPosition(360 * scaleFactor, height - 64 * scaleFactor);
+		if (this.skipImage.scale > 0)
+			this.skipImage.setScale(scaleFactor);
+
+		this.loopContainer.setPosition(width - 200 * scaleFactor, height - 64 * scaleFactor);
+		if (this.loopContainer.scale > 0)
+			this.loopContainer.setScale(scaleFactor);
+
+		this.loopImage.setPosition(width - 200 * scaleFactor, height - 64 * scaleFactor);
+		if (this.loopImage.scale > 0)
+			this.loopImage.setScale(scaleFactor);
+
+		this.autoContainer.setPosition(width - 72 * scaleFactor, height - 64 * scaleFactor);
+		if (this.autoContainer.scale > 0)
+			this.autoContainer.setScale(scaleFactor);
+
+		this.autoText.setPosition(width - 104 * scaleFactor, height - 86 * scaleFactor);
+		if (this.autoText.scale > 0)
+			this.autoText.setScale(scaleFactor);
+
+		this.gameOverOverlay.setPosition(0, 0);
+		this.gameOverOverlay.setScale(scaleFactor);
+
+		this.gameOverText.setPosition(width / 2, height / 2);
+		this.gameOverText.setScale(scaleFactor);
   	}
 
  	updateDamageText() {
@@ -114,7 +294,24 @@ export class Game extends Scene {
 
 	doTurn(last: AI | null) {
 		let aiList: AI[] = this.wizards;
-		aiList.push(this.enemy);
+		aiList.push(this.enemy as AI);
+		aiList.forEach((element) => {
+			element.filters?.external.clear();
+		});
+
+		let gameOver: boolean = true;
+		this.wizards.forEach((ai) => {
+			if (ai.GameComponent.health == 0)
+				return;
+
+			gameOver = false;
+		});
+
+		if (gameOver) {
+			this.gameOver();
+
+			return;
+		}
 
 		let index: number = -1;
 		if (last)
@@ -125,8 +322,8 @@ export class Game extends Scene {
 			index = 0;
 
 		let ai: AI = aiList[index] as AI;
-		let auto: boolean = this.auto;
-		let targets: AI[] = [this.enemy];
+		let auto: boolean = this.registry.get('auto');
+		let targets: AI[] = [this.enemy as AI];
 		let allies: AI[] = this.wizards;
 		if (ai == this.enemy) {
 			auto = true;
@@ -139,6 +336,11 @@ export class Game extends Scene {
 	}
 
 	spawnEnemy() {
+		if (this.enemy) {
+			this.enemy.GameComponent.destroy();
+			this.enemy.destroy();
+		}
+
 		const { width, height } = this.scale;
 		const scaleFactor = Math.min(Math.min(width / 1024, height / 768), 1);
 
@@ -165,12 +367,25 @@ export class Game extends Scene {
 
 		stats.ability2Index = abiltiesIndexList[Math.round(Math.random() * (length - 1))] as number;
 
-		this.enemy = new AI(this, width - 8 * scaleFactor, height / 2, 'enemy', -1).setOrigin(1, 0.5).setScale(scaleFactor);
-		this.enemy.setStats(stats);
-		this.enemy.create();
-
+		this.enemy = new AI(this, width - 8 * scaleFactor, height / 2, 'enemy', -1).setOrigin(1, 0.5).setScale(scaleFactor * 4);
 		let aiList: AI[] = this.wizards;
 		aiList.push(this.enemy);
+
+		this.enemy.setStats(stats);
+		this.enemy.create(true);
+		this.enemy.enableFilters().setInteractive({ useHandCursor: true });
+		this.enemy.on('pointerup', () => {
+			if (!this.selectedAbility)
+				return;
+
+			this.selectedAbility.performAbility(this.selectedAI, this.enemy, [this.enemy as AI]);
+
+			this.selectedAbility = null;
+
+			aiList.forEach((element) => {
+				element.filters?.external.clear();
+			});
+		});
 
 		let maxStamina = 1;
 		aiList.forEach((element) => {
@@ -179,7 +394,124 @@ export class Game extends Scene {
 		});
 
 		aiList.forEach((element) => {
+			element.GameComponent.stamina = 0;
 			element.GameComponent.maxStamina = maxStamina;
 		});
+	}
+
+	gameOver() {
+		if (this.registry.get('loop')) {
+			this.scene.start('Game');
+
+			return;
+		}
+
+		this.skipContainer.setScale(0);
+		this.skipImage.setScale(0);
+
+		this.loopContainer.setScale(0);
+		this.loopImage.setScale(0);
+
+		this.autoContainer.setScale(0);
+		this.autoText.setScale(0);
+
+		void (async () => {
+			const username = this.registry.get('username');
+			const subreddit = this.registry.get('subreddit');
+			const damage = this.registry.get('damage');
+			const money = this.registry.get('money') + Math.ceil(damage * 0.1);
+
+			if (username == undefined) {
+				this.registry.set('money', money);
+			}
+			else {
+				try {
+					var moneyPayload = {
+						money: money,
+						username: username
+					};
+					const data = JSON.stringify( moneyPayload );
+							
+					const response = await fetch('/api/setmoney', { 
+						method: 'POST',
+						headers: {
+							'Accept': 'application/json',
+							'Content-Type': 'application/json'
+						},
+						body: data 
+					});
+					if (!response.ok) throw new Error(`API error: ${response.status}`);
+					const responseData = (await response.json()) as NumberResponse;
+					this.registry.set('money', responseData.num);
+				} catch (error) {
+					console.error('Failed to set money:', error);
+				}
+			}
+			
+			if (subreddit == undefined) {
+				this.registry.set('level', this.registry.get('level') + damage);
+			}
+			else {
+				try {
+					var levelPayload = {
+						level: damage,
+						subreddit: subreddit
+					};
+					
+					const data = JSON.stringify( levelPayload );
+							
+					const response = await fetch('/api/setlevel', { 
+						method: 'POST',
+						headers: {
+							'Accept': 'application/json',
+							'Content-Type': 'application/json'
+						},
+						body: data 
+					});
+					if (!response.ok) throw new Error(`API error: ${response.status}`);
+					const responseData = (await response.json()) as NumberResponse;
+					this.registry.set('level', responseData.num);
+				} catch (error) {
+					console.error('Failed to set level:', error);
+				}
+			}
+			
+			if (username != 'anonymous') {
+				try {
+					var uiPayload = {
+						auto: this.registry.get('auto'),
+						loop: this.registry.get('loop')
+					};
+					
+					const data = JSON.stringify( uiPayload );
+							
+					const response = await fetch('/api/saveui', { 
+						method: 'POST',
+						headers: {
+							'Accept': 'application/json',
+							'Content-Type': 'application/json'
+						},
+						body: data 
+					});
+					if (!response.ok) throw new Error(`API error: ${response.status}`);
+				} catch (error) {
+					console.error('Failed to set level:', error);
+				}
+			}
+
+			this.gameOverOverlay.setInteractive();
+		})();
+
+		this.graduallyShowGameOver(0.01);
+	}
+
+	graduallyShowGameOver(alpha: number) {
+		this.gameOverOverlay.setAlpha(alpha);
+		this.gameOverText.setAlpha(alpha);
+
+		if (alpha == 1)
+			return;
+
+		setTimeout(() => { this.graduallyShowGameOver(alpha + 0.01); }, 0.01);
 	}
 }

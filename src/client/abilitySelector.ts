@@ -63,8 +63,8 @@ export class AbilitySelector {
 			.setOrigin(1, 0);
 
 		this.contentsContainer = this.owner.scene.add.graphics({fillStyle: { color: 0x333333 }, lineStyle: { width: 2, color: 0x121212 }})
-			.fillRoundedRect(0, 0, 500, 620 - 64, { tl: 0, tr: 0, bl: 4, br: 4 })
-			.strokeRoundedRect(0, 0, 500, 620 - 64, { tl: 0, tr: 0, bl: 4, br: 4 })
+			.fillRoundedRect(0, 0, 500, 700 - 64, { tl: 0, tr: 0, bl: 4, br: 4 })
+			.strokeRoundedRect(0, 0, 500, 700 - 64, { tl: 0, tr: 0, bl: 4, br: 4 })
 			.setDepth(1);
 
 		this.descriptionDivider = this.owner.scene.add.graphics({fillStyle: { color: 0x121212 }})
@@ -72,7 +72,7 @@ export class AbilitySelector {
 			.strokeRoundedRect(0, 0, 500, 2, { tl: 0, tr: 0, bl: 4, br: 4 })
 			.setDepth(1);
 
-		this.descriptionTitleText = this.owner.scene.add.text(x + 8, y + 442, `Testor`, {
+		this.descriptionTitleText = this.owner.scene.add.text(x + 8, y + 570, `Testor`, {
 				fontFamily: '"Kristen ITC", arial, serif',
 				fontSize: 48,
 				color: '#ffffff',
@@ -81,7 +81,7 @@ export class AbilitySelector {
 			})
 			.setDepth(1);
 
-		this.descriptionText = this.owner.scene.add.text(x + 8, y + 500, ``, {
+		this.descriptionText = this.owner.scene.add.text(x + 8, y + 628, ``, {
 				fontFamily: '"Kristen ITC", arial, serif',
 				fontSize: 32,
 				color: '#ffffff',
@@ -191,13 +191,13 @@ export class AbilitySelector {
 		this.contentsContainer.setPosition(w, h + 64 * scale);
 		this.contentsContainer.setScale(scale);
 
-		this.descriptionDivider.setPosition(w, h + 326 * scale);
+		this.descriptionDivider.setPosition(w, h + 454 * scale);
 		this.descriptionDivider.setScale(scale);
 
-		this.descriptionTitleText.setPosition(w + 8 * scale, h + 334 * scale);
+		this.descriptionTitleText.setPosition(w + 8 * scale, h + 462 * scale);
 		this.descriptionTitleText.setScale(scale);
 
-		this.descriptionText.setPosition(w + 8 * scale, h + 400 * scale);
+		this.descriptionText.setPosition(w + 8 * scale, h + 528 * scale);
 		this.descriptionText.setScale(scale);
 
 		this.abilities.forEach((element, index) => {

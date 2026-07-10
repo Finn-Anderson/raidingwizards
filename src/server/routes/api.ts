@@ -28,36 +28,48 @@ api.get('/init', async (c) => {
 		var money = undefined; 
 		var subreddit = undefined;
 		var level = undefined;
+		var auto = false;
+		var loop = false;
 		var ai = [];
 		for (var i = 0; i < 1; i++)
 			ai.push({health: 1, defence: 1, attack: 1, speed: 1, ability1Index: 0, ability2Index: 2});
 
-		redis.del(username + 'ai');
-		redis.del(username + 'money');
-		redis.del('leaderboard');
+		//redis.del(username + 'ai');
+		//redis.del(username + 'money');
+		//redis.del('leaderboard');
 
 		if (username != undefined) {
 			money = await redis.get(username + 'money');
 
 			subreddit = await redis.get(username + 'subreddit');
 			if (subreddit == undefined)
-				subreddit = "u/" + username;
+				subreddit = 'u/' + username;
 
 			level = await redis.zScore('leaderboard', subreddit);
 
 			const aiList = await redis.get(username + 'ai');
 			if (aiList != undefined)
 				ai = JSON.parse(aiList);
+
+			const autoString = await redis.get(username + 'auto');
+			if (autoString != undefined)
+				auto = (autoString.toLowerCase() == 'true');
+
+			const loopString = await redis.get(username + 'loop');
+			if (loopString != undefined)
+				loop = (loopString.toLowerCase() == 'true');
 		}
 
 		return c.json<InitResponse>({
 			type: 'init',
 			postId: postId,
 			money: money ? parseInt(money) : 20,
-			username: username ?? 'anonymous',
-			subreddit: subreddit ?? 'anonymous',
+			username: username,
+			subreddit: subreddit,
 			level: level ? level : 0,
 			ai: ai,
+			auto: auto,
+			loop: loop,
 		});
 	} catch (error) {
 		console.error(`API Init Error for post ${postId}:`, error);
@@ -167,6 +179,10 @@ api.post('/setmoney', async (c) => {
 
 	try {
 		const requestBody = await c.req.raw.clone().json();
+
+		if (requestBody.username == undefined)
+			return;
+
 		const num = requestBody.money;
 		await redis.set(requestBody.username + 'money', String(num));
 		return c.json<NumberResponse>({
@@ -191,8 +207,10 @@ api.post('/setsubreddit', async (c) => {
 	try {
 		const requestBody = await c.req.raw.clone().json();
 		const subreddit = requestBody.subreddit.substring(0, 21).toLowerCase();
-		if (requestBody.username != 'anonymous')
+
+		if (requestBody.username != undefined)
 			await redis.set(requestBody.username + 'subreddit', subreddit);
+
 		const level = await redis.zScore('leaderboard', subreddit);
 		const num = level ? level : 0;
 		return c.json<NumberResponse>({
@@ -216,6 +234,10 @@ api.post('/setlevel', async (c) => {
 
 	try {
 		const requestBody = await c.req.raw.clone().json();
+
+		if (requestBody.subreddit == undefined)
+			return;
+
 		const num = await redis.zIncrBy('leaderboard', requestBody.subreddit.toLowerCase(), requestBody.level);
 		return c.json<NumberResponse>({
 			type: 'number',
@@ -238,8 +260,34 @@ api.post('/updateai', async (c) => {
 
 	try {
 		const requestBody = await c.req.raw.clone().json();
+
+		if (requestBody.username == undefined)
+			return;
+
 		await redis.set(requestBody.username + 'ai', JSON.stringify(requestBody.ai));
 		await redis.set(requestBody.username + 'money', String(requestBody.money));
+	} catch (e) {
+		console.log('Upgrade AI Error:', await c.req.text());
+	}
+});
+
+api.post('/saveui', async (c) => {
+	const { postId } = context;
+	if (!postId) {
+		return c.json<ErrorResponse>({
+			status: 'error',
+			message: 'postId is required',
+		}, 400);
+	}
+
+	try {
+		const requestBody = await c.req.raw.clone().json();
+
+		if (requestBody.username == undefined)
+			return;
+
+		await redis.set(requestBody.username + 'auto', requestBody.auto.toString());
+		await redis.set(requestBody.username + 'loop', requestBody.loop.toString());
 	} catch (e) {
 		console.log('Upgrade AI Error:', await c.req.text());
 	}

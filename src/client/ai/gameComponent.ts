@@ -19,29 +19,33 @@ export class GameComponent {
 
 	abilityDisplay: {rectangle: Phaser.GameObjects.Rectangle, image: Phaser.GameObjects.Image, hoverComponent: HoverComponent}[] = [];
 	debuffDisplay: {rectangle: Phaser.GameObjects.Rectangle, image: Phaser.GameObjects.Image, hoverComponent: HoverComponent}[] = [];
+	
+	ability1cooldown = 0;
+	ability2cooldown = 0;
 
 	constructor(ai: AI) {
 		this.owner = ai;
 	}
 
 	createGame(bEnemy: boolean = false) {
-		if (!bEnemy) {
-			const ability1: Ability = this.owner.scene.registry.get('abilities')[this.owner.stats.ability1Index];
-			const display1 = ability1.display(this.owner, 4, 4, 0);
-			this.abilityDisplay.push(display1);
+		if (bEnemy)
+			return;
 
-			const ability2 = this.owner.scene.registry.get('abilities')[this.owner.stats.ability2Index];
-			const display2 = ability2.display(this.owner, 4, 4, 0);
-			this.abilityDisplay.push(display2);
-		}
+		const ability1: Ability = this.owner.scene.registry.get('abilities')[this.owner.stats.ability1Index];
+		const display1 = ability1.display(this.owner, 4, 4, 0);
+		this.abilityDisplay.push(display1);
+
+		const ability2 = this.owner.scene.registry.get('abilities')[this.owner.stats.ability2Index];
+		const display2 = ability2.display(this.owner, 4, 4, 0);
+		this.abilityDisplay.push(display2);
 	}
 
 	updateGameLayout(w: number, h: number, scale: number) {
 		this.abilityDisplay.forEach((element, index) => {
 			const height = this.owner.scene.scale.height;
 
-			const x = (32 + 64 * (index * 2 - 1) * scale);
-			const y = height - 32 * scale;
+			const x = (152 + 72 * (index * 2 - 1)) * scale;
+			const y = height - 72 * scale;
 
 			element.rectangle.setPosition(x, y);
 			if (element.rectangle.scale > 0)
@@ -69,8 +73,10 @@ export class GameComponent {
 	}
 
 	turn(targets: AI[], allies: AI[], auto: boolean) {
+		const scene = this.owner.scene as Game;
+
 		if (this.health == 0) {
-			(this.owner.scene as Game).doTurn(this.owner);
+			scene.doTurn(this.owner);
 
 			return;
 		}
@@ -85,8 +91,11 @@ export class GameComponent {
 
 		this.stamina += speed;
 
-		if (this.stamina < this.maxStamina)
+		if (this.stamina < this.maxStamina) {
+			scene.doTurn(this.owner);
+
 			return;
+		}
 
 		this.stamina -= this.maxStamina;
 		
@@ -94,9 +103,13 @@ export class GameComponent {
 		let ability2: Ability = this.owner.scene.registry.get('abilities')[this.owner.stats.ability2Index];
 		let ability: Ability = ability1;
 
-		if (ability1.cooldown > 0 && ability2.cooldown > 0) {
+		this.ability1cooldown = Math.max(this.ability1cooldown - 1, 0);
+		this.ability2cooldown = Math.max(this.ability2cooldown - 1, 0);
+
+		if (this.ability1cooldown > 0 && this.ability2cooldown > 0) {
 			this.owner.debuffs.length = 0;
 			this.displayDebuffs();
+			scene.doTurn(this.owner);
 
 			return;
 		}
@@ -111,9 +124,9 @@ export class GameComponent {
 		}
 
 		if (auto) {
-			if (ability1.cooldown > 0)
+			if (this.ability1cooldown > 0)
 				ability = ability2;
-			else if (ability2.cooldown == 0 && ability2.turns > ability1.turns)
+			else if (this.ability2cooldown == 0 && ability2.turns > ability1.turns)
 				ability = ability2;
 
 			if (!mainTarget) {
@@ -128,6 +141,7 @@ export class GameComponent {
 			if (!mainTarget) {
 				this.owner.debuffs.length = 0;
 				this.displayDebuffs();
+				scene.doTurn(this.owner);
 
 				return;
 			}
@@ -135,12 +149,19 @@ export class GameComponent {
 			if (ability.type == 'health')
 				targets = allies;
 
+			if (ability == ability1)
+				this.ability1cooldown = ability.turns;
+			else
+				this.ability2cooldown = ability.turns;
+
 			ability.performAbility(this.owner, mainTarget, targets);
 		}
 		else {
-			this.owner.play('idle');
+			this.owner.play(this.owner.identifier+'idle');
 
 			this.abilityDisplay.forEach((element) => { element.rectangle.setScale(this.owner.storedScale); element.image.setScale(this.owner.storedScale * 5) });
+			scene.skipContainer.setScale(this.owner.storedScale);
+			scene.skipImage.setScale(this.owner.storedScale);
 		}
 
 		this.owner.debuffs.length = 0;
@@ -148,25 +169,20 @@ export class GameComponent {
 	}
 
 	takeHealth(damage: number) {
+		if (damage == 0)
+			return;
+
 		this.health = Math.max(Math.min(this.health - damage, this.maxHealth), 0);
 
-		if (damage < 0)
+		if (damage > 0)
 			this.owner.setTint(0xff0029);
 		else
 			this.owner.setTint(0x00ff57);
 
-		if (this.health <= 0) {
+		if (this.health <= 0)
 			this.owner.setRotation(90 * (Math.PI / 180)); // animate
-		}
 
-		setTimeout(() => {
-			this.owner.clearTint();
-
-			if (this.health > 0)
-				return;
-
-			this.stamina = 0;
-		}, 200);
+		setTimeout(() => { this.owner.clearTint(); }, 400);
 	}
 
 	selectTarget(ability: Ability, targets: AI[], allies: AI[]): AI | null {
@@ -195,9 +211,8 @@ export class GameComponent {
 				return targets[i] as AI;
 			}
 		}
-		else {
+		else
 			return targets[Math.round(Math.random() * (targets.length - 1))] as AI;
-		}
 
 		return null;
 	}
@@ -218,5 +233,19 @@ export class GameComponent {
 
 		const { width, height } = this.owner.scene.scale;
 		this.owner.scene.updateLayout(width, height);
+	}
+
+	destroy() {
+		this.abilityDisplay.forEach((element) => {
+			element.rectangle.destroy();
+			element.image.destroy();
+			element.hoverComponent.destroy();
+		});
+
+		this.debuffDisplay.forEach((element) => {
+			element.rectangle.destroy();
+			element.image.destroy();
+			element.hoverComponent.destroy();
+		});
 	}
 }

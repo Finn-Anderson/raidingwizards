@@ -75,8 +75,8 @@ export class HoverComponent {
 		this.descriptionText.setText(description);
 
 		this.descriptionContainer.clear()
-			.fillRoundedRect(0, 32, 500, this.descriptionText.height, { tl: 0, tr: 0, bl: 4, br: 4 })
-			.strokeRoundedRect(0, 32, 500, this.descriptionText.height, { tl: 0, tr: 0, bl: 4, br: 4 })
+			.fillRoundedRect(0, 32, 500, this.descriptionText.height + 8, { tl: 0, tr: 0, bl: 4, br: 4 })
+			.strokeRoundedRect(0, 32, 500, this.descriptionText.height + 8, { tl: 0, tr: 0, bl: 4, br: 4 })
 			.setAlpha(0)
 			.setDepth(1);
 	}

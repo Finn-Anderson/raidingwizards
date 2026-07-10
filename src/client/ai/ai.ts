@@ -38,14 +38,14 @@ export class AI extends Phaser.GameObjects.Sprite {
 
 	create(bEnemy: boolean = false) {
 		this.scene.anims.create({
-			key: 'idle',
+			key: this.identifier+'idle',
 			frames: this.scene.anims.generateFrameNumbers(this.identifier, { start: 0, end: 1 }),
 			frameRate: 2,
 			repeat: -1
 		});
 
 		this.scene.anims.create({
-			key: 'attack',
+			key: this.identifier+'attack',
 			frames: this.scene.anims.generateFrameNumbers(this.identifier, { start: 2, end: 2 }),
 			frameRate: 1,
 			repeat: 0
@@ -63,7 +63,7 @@ export class AI extends Phaser.GameObjects.Sprite {
 
 	setupMouseOverAnim(element: Phaser.GameObjects.GameObject) {
 		element.on('pointerover', () => {
-			this.play('idle');
+			this.play(this.identifier+'idle');
 		});
 
 		element.on('pointerout', () => {

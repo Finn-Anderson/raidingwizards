@@ -33,7 +33,8 @@ export class Preloader extends Scene {
 		this.load.image('level', 'level.png');
 
 		// Game
-		// repeat: circle with arrow; infinity: inifinity symbol; skip: 2-3 arrows
+		this.load.image('skip', 'skip.png');
+		this.load.image('loop', 'loop.png');
 
 		// AI
 		this.load.image('attack', 'attack.png');
@@ -63,6 +64,8 @@ export class Preloader extends Scene {
 				this.registry.set('username', data.username);
 				this.registry.set('subreddit', data.subreddit);
 				this.registry.set('ai', data.ai);
+				this.registry.set('auto', data.auto);
+				this.registry.set('loop', data.loop);
 
 				this.scene.start('MainMenu');
 			} catch (error) {
@@ -74,6 +77,9 @@ export class Preloader extends Scene {
 				for (var i = 0; i < 1; i++)
 					aiArray.push({health: 1, defence: 1, attack: 1, speed: 1})
 				this.registry.set('ai', aiArray);
+				this.registry.set('auto', false);
+				this.registry.set('loop', 'single');
+
 				console.error('Failed to fetch initial count:', error);
 
 				this.scene.start('MainMenu');

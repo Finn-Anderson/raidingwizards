@@ -11,7 +11,6 @@ export class Ability {
 	texture: string;
 
 	turns: number;
-	cooldown: number;
 
 	damageMultiplier: number;
 	numProjectiles: number;
@@ -25,7 +24,6 @@ export class Ability {
 		this.texture = texture;
 
 		this.turns = turns;
-		this.cooldown = 0;
 
 		this.damageMultiplier = damageMultiplier;
 		this.numProjectiles = numProjectiles;
@@ -49,11 +47,11 @@ export class Ability {
 
 		let size = 64;
 		if (owner.scene instanceof Game)
-			size = 320;
+			size = 128;
 
-		const rectangle = owner.scene.add.rectangle(x, y, size, size, 0x333333).setStrokeStyle(2, 0x121212).setRounded(50).setScale(scale).setInteractive({useHandCursor: true})
+		const rectangle = owner.scene.add.rectangle(x, y, size, size, 0x333333).setStrokeStyle(2, 0x121212).setRounded(size / 2).setScale(scale).setInteractive({useHandCursor: true})
 			.on('pointerover', () => { 
-				if (!customInteract || owner.scene instanceof Game) {
+				if (!customInteract && !(owner.scene instanceof Game && owner.scene.selectedAbility == this)) {
 					rectangle.setFillStyle(0xff5700); 
 					rectangle.setStrokeStyle(2, 0xe64e00);
 				}
@@ -63,7 +61,7 @@ export class Ability {
 				hoverComponent.startDisplayTimer();
 			})
 			.on('pointerout', () => { 
-				if (!customInteract || owner.scene instanceof Game) {
+				if (!customInteract && !(owner.scene instanceof Game && owner.scene.selectedAbility == this)) {
 					rectangle.setFillStyle(0x333333); 
 					rectangle.setStrokeStyle(2, 0x121212); 
 				}
@@ -83,7 +81,12 @@ export class Ability {
 				}
 				else {
 					owner.scene.selectedAbility = this;
-					// add glow to possible targets based on ability type.
+					
+					let aiList: AI[] = owner.scene.wizards;
+					aiList.push(owner.scene.enemy as AI);
+					aiList.forEach((element) => {
+						element.filters?.external.addGlow(tint, 4, 0, scale);
+					});
 
 					owner.GameComponent.abilityDisplay.forEach((element) => { 
 						element.rectangle.setFillStyle(0x333333); 
@@ -101,6 +104,9 @@ export class Ability {
 
 	performAbility(owner: AI, mainTarget: AI | null, targets: AI[]) {
 		owner.GameComponent.abilityDisplay.forEach((element) => { element.rectangle.setScale(0); element.image.setScale(0) });
+		const scene = owner.scene as Game;
+		scene.skipContainer.setScale(0);
+		scene.skipImage.setScale(0);
 
 		for (var i = targets.length - 1; i > -1; i--) {
 			if ((this.type == 'health' && targets[i]!.GameComponent.health == targets[i]!.GameComponent.maxHealth) || targets[i]!.GameComponent.health == 0)
@@ -120,14 +126,18 @@ export class Ability {
 				break;
 		}
 
-		owner.play('attack'); // add fx colour on staff based on ability type
+		owner.play(owner.identifier+'attack'); // add fx colour on staff based on ability type
 
 		setTimeout(() => {
 			owner.stop();
 			owner.setFrame(0);
 
-			(owner.scene as Game).doTurn(owner);
-		}, 200);
+			const scene: Game = owner.scene as Game;
+			if (owner == scene.enemy && owner.GameComponent.health == 0)
+				scene.spawnEnemy();
+
+			scene.doTurn(owner);
+		}, 400);
 	}
 
 	use(owner: AI, target: AI) {
@@ -154,7 +164,14 @@ export class Ability {
 			defence = 1;
 		}
 		
-		owner.GameComponent.takeHealth(damage / defence);
+		damage = damage / defence;
+		target.GameComponent.takeHealth(damage);
+
+		const scene = owner.scene as Game;
+		if (scene.enemy != owner) {
+			scene.registry.set('damage', scene.registry.get('damage') + damage);
+			scene.updateDamageText();
+		}
 
 		if (this.debuff != '') {
 			target.debuffs.push({ability: this, applier: owner});

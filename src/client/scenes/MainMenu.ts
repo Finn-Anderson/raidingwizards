@@ -7,6 +7,8 @@ import { AbilitySelector } from '../abilitySelector';
 
 export class MainMenu extends Scene {
 	background: Phaser.GameObjects.Image;
+
+	fightContainer: Phaser.GameObjects.Rectangle;
 	fight: Phaser.GameObjects.Sprite;
 
 	moneyImage: Phaser.GameObjects.Image;
@@ -33,10 +35,19 @@ export class MainMenu extends Scene {
 
 		this.background = this.add.image(0, 0, 'background').setOrigin(0);
 
-		this.fight = this.add.sprite(width - 24 - 32, height * 0.5, 'fight').setInteractive({ useHandCursor: true })
-			.on('pointerover', () => { this.fight?.setTint(0xff5700); })
-			.on('pointerout', () => { this.fight?.clearTint(); })
-			.on('pointerup', () => { this.scene.start('Game'); });
+		this.fightContainer = this.add.rectangle(width / 2, height * 0.92, 164, 164, 0x333333).setStrokeStyle(2, 0x121212).setRounded(98).setInteractive({useHandCursor: true})
+			.on('pointerover', () => { 
+				this.fightContainer.setFillStyle(0xff5700); 
+				this.fightContainer.setStrokeStyle(2, 0xe64e00);
+			})
+			.on('pointerout', () => { 
+				this.fightContainer.setFillStyle(0x333333); 
+				this.fightContainer.setStrokeStyle(2, 0x121212); 
+			})
+			.on('pointerup', () => {
+				this.scene.start('Game');
+			});
+		this.fight = this.add.sprite(width / 2, height * 0.92, 'fight');
 
 		this.moneyImage = this.add.image(4, 4, 'money').setOrigin(0);
 
@@ -100,8 +111,11 @@ export class MainMenu extends Scene {
 
 		this.scaleFactor = Math.min(height / 1600, 1);
 
-		this.fight.setPosition(width / 2, height * 0.9);
-		this.fight.setDisplaySize(128 * this.scaleFactor, 128 * this.scaleFactor);
+		this.fightContainer.setPosition(width / 2, height * 0.92);
+		this.fightContainer.setScale(this.scaleFactor);
+
+		this.fight.setPosition(width / 2, height * 0.92);
+		this.fight.setDisplaySize(96 * this.scaleFactor, 96 * this.scaleFactor);
 
 		this.moneyImage.setPosition(8 * this.scaleFactor, 88 * this.scaleFactor);
 		this.moneyImage.setScale(this.scaleFactor);
