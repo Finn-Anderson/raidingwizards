@@ -57,6 +57,7 @@ export class Leaderboard {
 
 				const tdSubreddit = document.createElement('td');
 				tdSubreddit.innerHTML = row.member;
+				tdSubreddit.style.fontSize = (48 - row.member.length).toString() + 'px';
 				tr.appendChild(tdSubreddit);
 
 				const tdLevel = document.createElement('td');

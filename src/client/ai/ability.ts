@@ -17,8 +17,9 @@ export class Ability {
 
 	debuff: string;
 	tooltip: string;
+	length: number;
 
-	constructor(name: string, type: string, texture: string, turns: number, damageMultiplier: number, numProjectiles: number = 1, debuff: string = '', tooltip: string = '') {
+	constructor(name: string, type: string, texture: string, turns: number, damageMultiplier: number, numProjectiles: number = 1, debuff: string = '', tooltip: string = '', length: number = 1) {
 		this.name = name;
 		this.type = type;
 		this.texture = texture;
@@ -30,6 +31,7 @@ export class Ability {
 
 		this.debuff = debuff;
 		this.tooltip = tooltip;
+		this.length = length;
 	}
 
 	display(owner: AI, x: number, y: number, scale: number, customInteract: boolean = false): {rectangle: Phaser.GameObjects.Rectangle, image: Phaser.GameObjects.Image, hoverComponent: HoverComponent} {
@@ -82,10 +84,10 @@ export class Ability {
 				else {
 					owner.scene.selectedAbility = this;
 					
-					let aiList: AI[] = owner.scene.wizards;
+					let aiList: AI[] = [...owner.scene.wizards];
 					aiList.push(owner.scene.enemy as AI);
 					aiList.forEach((element) => {
-						element.filters?.external.addGlow(tint, 4, 0, scale);
+						element.filters?.external.addGlow(tint, 8, 0, scale);
 					});
 
 					owner.GameComponent.abilityDisplay.forEach((element) => { 
@@ -103,13 +105,20 @@ export class Ability {
 	}
 
 	performAbility(owner: AI, mainTarget: AI | null, targets: AI[]) {
-		owner.GameComponent.abilityDisplay.forEach((element) => { element.rectangle.setScale(0); element.image.setScale(0) });
+		owner.GameComponent.abilityDisplay.forEach((element) => { 
+			element.rectangle.setScale(0); 
+			element.image.setScale(0);
+
+			element.rectangle.setFillStyle(0x333333); 
+			element.rectangle.setStrokeStyle(2, 0x121212);
+		});
+
 		const scene = owner.scene as Game;
 		scene.skipContainer.setScale(0);
 		scene.skipImage.setScale(0);
 
 		for (var i = targets.length - 1; i > -1; i--) {
-			if ((this.type == 'health' && targets[i]!.GameComponent.health == targets[i]!.GameComponent.maxHealth) || targets[i]!.GameComponent.health == 0)
+			if ((this.type == 'health' && targets[i]!.GameComponent.health >= targets[i]!.GameComponent.maxHealth) || targets[i]!.GameComponent.health <= 0)
 				targets.splice(i, 1);
 		}
 
@@ -120,20 +129,23 @@ export class Ability {
 			this.use(owner, mainTarget as AI);
 
 			if (mainTarget!.GameComponent.health <= 0 || (this.type == 'health' && mainTarget!.GameComponent.health == mainTarget!.GameComponent.maxHealth))
-				targets = targets.filter(item => item !== mainTarget);
+				targets = targets.filter(item => item != mainTarget);
 
 			if (targets.length == 0)
 				break;
 		}
 
 		owner.play(owner.identifier+'attack'); // add fx colour on staff based on ability type
+		
+		scene.selectedAbility = null;
 
 		setTimeout(() => {
 			owner.stop();
 			owner.setFrame(0);
 
 			const scene: Game = owner.scene as Game;
-			if (owner == scene.enemy && owner.GameComponent.health == 0)
+			const target: AI = mainTarget as AI;
+			if (target == scene.enemy && target.GameComponent.health <= 0)
 				scene.spawnEnemy();
 
 			scene.doTurn(owner);
@@ -174,7 +186,7 @@ export class Ability {
 		}
 
 		if (this.debuff != '') {
-			target.debuffs.push({ability: this, applier: owner});
+			target.debuffs.push({ability: this, turns: this.length, applier: owner});
 			target.GameComponent.displayDebuffs();
 		}
 	}

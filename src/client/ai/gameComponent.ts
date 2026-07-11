@@ -28,6 +28,9 @@ export class GameComponent {
 	}
 
 	createGame(bEnemy: boolean = false) {
+		this.health = this.owner.stats.health * 5;
+		this.maxHealth = this.health;
+
 		if (bEnemy)
 			return;
 
@@ -53,29 +56,30 @@ export class GameComponent {
 
 			element.image.setPosition(x, y);
 			if (element.image.scale > 0)
-				element.image.setScale(scale);
+				element.image.setScale(scale * 1.5);
 
 			element.hoverComponent.updateLayout(x, y, scale);
 		});
 
-		const halfPoint = this.debuffDisplay.length - 1;
+		const halfPoint = (this.debuffDisplay.length - 1) / 2;
 		this.debuffDisplay.forEach((element, index) => {
 			const x = w + (64 * (index - halfPoint)) * scale;
+			const y = h - 128 * scale;
 
-			element.rectangle.setPosition(x, h);
-			element.rectangle.setScale(scale);
+			element.rectangle.setPosition(x, y);
+			element.rectangle.setScale(scale / 2);
 
-			element.image.setPosition(x, h);
-			element.image.setScale(scale);
+			element.image.setPosition(x, y);
+			element.image.setScale(scale / 2);
 
-			element.hoverComponent.updateLayout(x, h, scale);
+			element.hoverComponent.updateLayout(x, y, scale);
 		});
 	}
 
 	turn(targets: AI[], allies: AI[], auto: boolean) {
 		const scene = this.owner.scene as Game;
 
-		if (this.health == 0) {
+		if (this.health <= 0) {
 			scene.doTurn(this.owner);
 
 			return;
@@ -87,6 +91,7 @@ export class GameComponent {
 				continue;
 
 			speed = speed / 2;
+			break;
 		}
 
 		this.stamina += speed;
@@ -107,8 +112,7 @@ export class GameComponent {
 		this.ability2cooldown = Math.max(this.ability2cooldown - 1, 0);
 
 		if (this.ability1cooldown > 0 && this.ability2cooldown > 0) {
-			this.owner.debuffs.length = 0;
-			this.displayDebuffs();
+			this.clearDebuffs();
 			scene.doTurn(this.owner);
 
 			return;
@@ -130,17 +134,16 @@ export class GameComponent {
 				ability = ability2;
 
 			if (!mainTarget) {
-				mainTarget = this.selectTarget(ability, targets, allies);
+				mainTarget = this.selectTarget(ability, [...targets], [...allies]);
 
-				if (!mainTarget) {
+				if (!mainTarget && this.ability1cooldown == 0 && this.ability2cooldown == 0) {
 					ability = ability == ability1 ? ability2 : ability1;
-					this.selectTarget(ability, targets, allies);
+					this.selectTarget(ability, [...targets], [...allies]);
 				}
 			}
 
 			if (!mainTarget) {
-				this.owner.debuffs.length = 0;
-				this.displayDebuffs();
+				this.clearDebuffs();
 				scene.doTurn(this.owner);
 
 				return;
@@ -162,9 +165,21 @@ export class GameComponent {
 			this.abilityDisplay.forEach((element) => { element.rectangle.setScale(this.owner.storedScale); element.image.setScale(this.owner.storedScale * 5) });
 			scene.skipContainer.setScale(this.owner.storedScale);
 			scene.skipImage.setScale(this.owner.storedScale);
+
+			// Add ability turn timer display + prevent interaction
 		}
 
-		this.owner.debuffs.length = 0;
+		this.clearDebuffs();
+	}
+
+	clearDebuffs() {
+		for (var i = this.owner.debuffs.length - 1; i > -1; i--) {
+			this.owner.debuffs[i]!.turns--;
+
+			if (this.owner.debuffs[i]!.turns == 0)
+				this.owner.debuffs.splice(i, 1);
+		}
+
 		this.displayDebuffs();
 	}
 
@@ -180,30 +195,15 @@ export class GameComponent {
 			this.owner.setTint(0x00ff57);
 
 		if (this.health <= 0)
-			this.owner.setRotation(90 * (Math.PI / 180)); // animate
+			this.owner.setRotation(90 * (Math.PI / 180)); // replace with gravestone
+		else
+			this.owner.setRotation(0);
 
 		setTimeout(() => { this.owner.clearTint(); }, 400);
 	}
 
 	selectTarget(ability: Ability, targets: AI[], allies: AI[]): AI | null {
-		if (ability.debuff != '') {
-			for (var i = 0; i < targets.length; i++) {
-				let bContainsDebuff: boolean = false;
-				for (var j = 0; j < targets[i]!.debuffs.length; j++) {
-					if (targets[i]!.debuffs[j]!.ability != ability)
-						continue;
-
-					bContainsDebuff = true;
-					break;
-				}
-
-				if (bContainsDebuff)
-					continue;
-
-				return targets[i] as AI;
-			}
-		}
-		else if (ability.type == 'health') {
+		if (ability.type == 'health') {
 			for (var i = 0; i < allies.length; i++) {
 				if (allies[i]!.GameComponent.health == allies[i]!.GameComponent.maxHealth || (ability.name == 'revive' && allies[i]!.GameComponent.health > 0))
 					continue;
@@ -211,8 +211,34 @@ export class GameComponent {
 				return targets[i] as AI;
 			}
 		}
-		else
-			return targets[Math.round(Math.random() * (targets.length - 1))] as AI;
+		else {
+			for (var i = targets.length - 1; i > -1; i--) {
+				if (targets[i]!.GameComponent.health > 0)
+					continue;
+
+				targets.splice(i, 1);
+			}
+
+			if (ability.debuff != '') {
+				for (var i = 0; i < targets.length; i++) {
+					let bContainsDebuff: boolean = false;
+					for (var j = 0; j < targets[i]!.debuffs.length; j++) {
+						if (targets[i]!.debuffs[j]!.ability != ability)
+							continue;
+
+						bContainsDebuff = true;
+						break;
+					}
+
+					if (bContainsDebuff)
+						continue;
+
+					return targets[i] as AI;
+				}
+			}
+			else
+				return targets[Math.round(Math.random() * (targets.length - 1))] as AI;
+		}
 
 		return null;
 	}
@@ -227,7 +253,7 @@ export class GameComponent {
 		this.debuffDisplay.length = 0;
 
 		this.owner.debuffs.forEach((element) => {
-			const display1 = element.ability.display(this.owner, 4, 4, this.owner.storedScale);
+			const display1 = element.ability.display(this.owner, 0, 0, this.owner.storedScale / 2, true);
 			this.debuffDisplay.push(display1);
 		});
 

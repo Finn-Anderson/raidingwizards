@@ -33,7 +33,6 @@ export class DropdownList {
 
 		this.element = document.createElement('input');
 		this.element.value = subreddit.substring(2);
-		this.element.maxLength = 21;
 		inputDiv.appendChild(this.element);
 
 		div.appendChild(inputDiv);
@@ -81,8 +80,8 @@ export class DropdownList {
 			this.GetSubreddits();
 		});
 
-		document.addEventListener('click', (event) => {
-			if (event.target != this.element) {
+		document.addEventListener('pointerdown', (event) => {
+			if (!event.target || (event.target != this.element && (event.target as HTMLElement).parentElement != this.container)) {
 				this.element.blur();
 				this.container.innerHTML = '';
 				this.element.value = this.scene.registry.get('subreddit').substring(2);
@@ -91,7 +90,7 @@ export class DropdownList {
 	}
 
 	async GetSubreddits() {
-		this.element.value = this.element.value.toLowerCase();
+		this.element.value = this.element.value.toLowerCase().substring(0, 21);
 		const value = this.button.innerHTML + this.element.value;
 		try {
 			var payload = {
@@ -124,7 +123,7 @@ export class DropdownList {
 				button.classList.add('dropdown-button');
 				button.innerHTML = result.at(i)!.member + ' - <span id="score">' + result.at(i)!.score + '</span>';
 				button.value = result.at(i)!.member;
-				button.onclick = this.setSubreddit.bind(button, button.value);
+				button.onclick = () => { this.setSubreddit(button.value) };
 				this.container.appendChild(button);
 
 				if (this.element.value == result.at(i)!.member.slice(2))
@@ -138,7 +137,7 @@ export class DropdownList {
 			button.classList.add('dropdown-button');
 			button.innerHTML = 'Add new';
 			button.value = value;
-			button.onclick = this.setSubreddit.bind(button, button.value);
+			button.onclick = () => { this.setSubreddit(button.value) };
 			this.container.appendChild(button);
 		} catch (error) {
 			console.error('Failed to search for subreddits:', error);
@@ -152,7 +151,8 @@ export class DropdownList {
 
 	setSubreddit(value: string) {
 		this.container.innerHTML = '';
-
+		this.element.value = value;
+		
 		this.scene.registry.set('subreddit', value);
 
 		void (async () => {

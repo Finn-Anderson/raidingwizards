@@ -43,7 +43,7 @@ export class Game extends Scene {
 
 		this.damageImage = this.add.image(0, 0, 'attack').setOrigin(0).setTint(0xff0029);
 		this.damageText = this.add
-			.text(4, 4, `${this.registry.get('damage')}`, {
+			.text(0, 0, `${this.registry.get('damage')}`, {
 				fontFamily: '"Kristen ITC", arial, serif',
 				fontSize: 72,
 				color: '#ff0029',
@@ -63,15 +63,7 @@ export class Game extends Scene {
 				if (!this.selectedAbility)
 					return;
 
-				this.selectedAbility.performAbility(this.selectedAI, ai, this.wizards);
-
-				this.selectedAbility = null;
-
-				let aiList: AI[] = this.wizards;
-				aiList.push(this.enemy as AI);
-				aiList.forEach((element) => {
-					element.filters?.external.clear();
-				});
+				this.selectedAbility.performAbility(this.selectedAI, ai, [...this.wizards]);
 			});
 
 			this.wizards.push(ai);
@@ -194,18 +186,20 @@ export class Game extends Scene {
 				strokeThickness: 2,
 			}).setOrigin(0);
 
-		this.gameOverOverlay = this.add.rectangle(0, 0, width, height, 0xff0029, 0).setOrigin(0)
+		this.gameOverOverlay = this.add.rectangle(0, 0, width, height, 0xff0029).setOrigin(0).setAlpha(0)
 			.on('pointerup', () => {
 				this.scene.start('MainMenu');
 			});
 		this.gameOverText = this.add
-			.text(width / 2, height / 2, `Game Over`, {
+			.text(0, 0, `Game Over`, {
 				fontFamily: '"Kristen ITC", arial, serif',
 				fontSize: 72,
 				color: '#ffffff',
 				stroke: '#f2f2f2',
 				strokeThickness: 2,
-			}).setAlpha(0);
+			})
+			.setAlpha(0)
+			.setOrigin(0.5);
 
 		this.updateLayout(width, height);
 		this.scale.on('resize', (gameSize: Phaser.Structs.Size) => {
@@ -237,8 +231,9 @@ export class Game extends Scene {
 			ai.updateLayout(x, y, scaleFactor);
 		});
 
-		this.enemy!.setPosition(width - 8, height / 2);
-		this.enemy!.setScale(scaleFactor * 4);
+		this.enemy!.setPosition(width - 128 * scaleFactor, height / 2);
+		this.enemy!.setScale(scaleFactor);
+		this.enemy!.updateLayout(width - 128 * scaleFactor, height / 2, scaleFactor);
 
 		this.skipContainer.setPosition(360 * scaleFactor, height - 64 * scaleFactor);
 		if (this.skipContainer.scale > 0)
@@ -265,7 +260,7 @@ export class Game extends Scene {
 			this.autoText.setScale(scaleFactor);
 
 		this.gameOverOverlay.setPosition(0, 0);
-		this.gameOverOverlay.setScale(scaleFactor);
+		this.gameOverOverlay.setDisplaySize(width, height);
 
 		this.gameOverText.setPosition(width / 2, height / 2);
 		this.gameOverText.setScale(scaleFactor);
@@ -293,7 +288,7 @@ export class Game extends Scene {
 	}
 
 	doTurn(last: AI | null) {
-		let aiList: AI[] = this.wizards;
+		let aiList: AI[] = [...this.wizards];
 		aiList.push(this.enemy as AI);
 		aiList.forEach((element) => {
 			element.filters?.external.clear();
@@ -324,22 +319,20 @@ export class Game extends Scene {
 		let ai: AI = aiList[index] as AI;
 		let auto: boolean = this.registry.get('auto');
 		let targets: AI[] = [this.enemy as AI];
-		let allies: AI[] = this.wizards;
-		if (ai == this.enemy) {
+		let allies: AI[] = [...this.wizards];
+		if (ai == this.enemy as AI) {
 			auto = true;
-			targets = this.wizards;
-			allies = [this.enemy];
+			targets = [...this.wizards];
+			allies = [this.enemy as AI];
 		}
 
-		ai!.GameComponent.turn(targets, allies, auto);
 		this.selectedAI = ai;
+		ai!.GameComponent.turn(targets, allies, auto);
 	}
 
 	spawnEnemy() {
-		if (this.enemy) {
-			this.enemy.GameComponent.destroy();
-			this.enemy.destroy();
-		}
+		this.enemy?.GameComponent.destroy();
+		this.enemy?.destroy();
 
 		const { width, height } = this.scale;
 		const scaleFactor = Math.min(Math.min(width / 1024, height / 768), 1);
@@ -357,18 +350,20 @@ export class Game extends Scene {
 				stats.speed++;
 		}
 
-		let length = (this.registry.get('abilities') as Ability[]).length;
+		let firstAbility = [0, 3];
+
+		let secondAbility = [...this.registry.get('abilities')] as Ability[];
+		secondAbility.splice(0, 1);
+		secondAbility.splice(3, 1);
+
+		let length = secondAbility.length;
 		let abiltiesIndexList: number[] = Array.from({length}, (_, index) => index);
 
-		let ability1Index = Math.round(Math.random() * (length - 1));
-		stats.ability1Index = abiltiesIndexList[ability1Index] as number;
-		abiltiesIndexList.splice(ability1Index, 1);
-		length--;
-
+		stats.ability1Index = firstAbility[Math.round(Math.random())] as number;
 		stats.ability2Index = abiltiesIndexList[Math.round(Math.random() * (length - 1))] as number;
 
-		this.enemy = new AI(this, width - 8 * scaleFactor, height / 2, 'enemy', -1).setOrigin(1, 0.5).setScale(scaleFactor * 4);
-		let aiList: AI[] = this.wizards;
+		this.enemy = new AI(this, width - 8 * scaleFactor, height / 2, 'enemy', -1).setScale(scaleFactor);
+		let aiList: AI[] = [...this.wizards];
 		aiList.push(this.enemy);
 
 		this.enemy.setStats(stats);
@@ -379,12 +374,6 @@ export class Game extends Scene {
 				return;
 
 			this.selectedAbility.performAbility(this.selectedAI, this.enemy, [this.enemy as AI]);
-
-			this.selectedAbility = null;
-
-			aiList.forEach((element) => {
-				element.filters?.external.clear();
-			});
 		});
 
 		let maxStamina = 1;
@@ -414,6 +403,9 @@ export class Game extends Scene {
 
 		this.autoContainer.setScale(0);
 		this.autoText.setScale(0);
+
+		this.gameOverOverlay.setDepth(3);
+		this.gameOverText.setDepth(3);
 
 		void (async () => {
 			const username = this.registry.get('username');
@@ -499,14 +491,14 @@ export class Game extends Scene {
 				}
 			}
 
-			this.gameOverOverlay.setInteractive();
+			this.gameOverOverlay.setInteractive({ useHandCursor: true });
 		})();
 
 		this.graduallyShowGameOver(0.01);
 	}
 
 	graduallyShowGameOver(alpha: number) {
-		this.gameOverOverlay.setAlpha(alpha);
+		this.gameOverOverlay.setAlpha(alpha / 2);
 		this.gameOverText.setAlpha(alpha);
 
 		if (alpha == 1)

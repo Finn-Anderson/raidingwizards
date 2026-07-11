@@ -88,14 +88,14 @@ export class Preloader extends Scene {
 
 		let abilities: Ability[] = [];
 		abilities.push(new Ability('Attack', 'attack', 'attack', 1, 1, 1));
-		abilities.push(new Ability('Multi-Attack', 'attack', 'multiAttack', 3, 1, 3));
-		abilities.push(new Ability('Weaken', 'attack', 'weaken', 3, 0, 1, 'weaken', 'Reduces enemy\'s defence by half (stacks)'));
+		abilities.push(new Ability('Multi-Attack', 'attack', 'multiAttack', 4, 1, 3));
+		abilities.push(new Ability('Weaken', 'attack', 'weaken', 4, 0, 1, 'weaken', 'Reduces enemy\'s defence by half (stacks) for 2 turns', 2));
 		abilities.push(new Ability('Riposte', 'defence', 'defence', 1, 0.5, 1));
-		abilities.push(new Ability('Taunt', 'defence', 'taunt', 3, 0, 1, 'taunt', 'Taunts enemy to target last taunter'));
+		abilities.push(new Ability('Taunt', 'defence', 'taunt', 4, 0, 1, 'taunt', 'Taunts enemy to target last taunter', 1));
 		abilities.push(new Ability('Heal', 'health', 'health', 1, 0.5, 1));
-		abilities.push(new Ability('Multi-Heal', 'health', 'multiHeal', 4, 1, 5));
-		abilities.push(new Ability('Revive', 'health', 'revive', 7, 5, 1));
-		abilities.push(new Ability('Slow', 'speed', 'slow', 3, 0, 1, 'slow', 'Halves enemy speed (stacks)'));
+		abilities.push(new Ability('Multi-Heal', 'health', 'multiHeal', 5, 1, 5));
+		abilities.push(new Ability('Revive', 'health', 'revive', 8, 5, 1));
+		abilities.push(new Ability('Slow', 'speed', 'slow', 4, 0, 1, 'slow', 'Halves enemy speed (does not stack) for 2 turns', 2));
 
 		this.registry.set('abilities', abilities);
   	}

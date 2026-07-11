@@ -10,7 +10,7 @@ export class AI extends Phaser.GameObjects.Sprite {
 	identifier: string;
 
 	stats: {health: number, defence: number, attack: number, speed: number, ability1Index: number, ability2Index: number}; // item?
-	debuffs: {ability: Ability, applier: AI}[];
+	debuffs: {ability: Ability, turns: number, applier: AI}[];
 
 	index: number = 0;
 	storedScale: number = 1;
