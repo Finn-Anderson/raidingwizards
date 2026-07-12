@@ -231,9 +231,9 @@ export class Game extends Scene {
 			ai.updateLayout(x, y, scaleFactor);
 		});
 
-		this.enemy!.setPosition(width - 128 * scaleFactor, height / 2);
-		this.enemy!.setScale(scaleFactor);
-		this.enemy!.updateLayout(width - 128 * scaleFactor, height / 2, scaleFactor);
+		this.enemy?.setPosition(width - 128 * scaleFactor, height / 2);
+		this.enemy?.setScale(scaleFactor);
+		this.enemy?.updateLayout(width - 128 * scaleFactor, height / 2, scaleFactor);
 
 		this.skipContainer.setPosition(360 * scaleFactor, height - 64 * scaleFactor);
 		if (this.skipContainer.scale > 0)
@@ -255,7 +255,7 @@ export class Game extends Scene {
 		if (this.autoContainer.scale > 0)
 			this.autoContainer.setScale(scaleFactor);
 
-		this.autoText.setPosition(width - 104 * scaleFactor, height - 86 * scaleFactor);
+		this.autoText.setPosition(width - 108 * scaleFactor, height - 86 * scaleFactor);
 		if (this.autoText.scale > 0)
 			this.autoText.setScale(scaleFactor);
 
@@ -309,8 +309,14 @@ export class Game extends Scene {
 		}
 
 		let index: number = -1;
-		if (last)
+		if (last) {
 			index = aiList.findIndex((element) => element == last);
+
+			if (last.GameComponent.stamina >= last.GameComponent.maxStamina)
+				last.GameComponent.stamina -= last.GameComponent.maxStamina;
+
+			last.GameComponent.speedBar!.setScale((last.GameComponent.stamina / last.GameComponent.maxStamina) * last.storedScale, last.storedScale);
+		}
 
 		index++;
 		if (index == aiList.length)
@@ -385,6 +391,7 @@ export class Game extends Scene {
 		aiList.forEach((element) => {
 			element.GameComponent.stamina = 0;
 			element.GameComponent.maxStamina = maxStamina;
+			element.GameComponent.speedBar!.setScale(0, element.storedScale);
 		});
 	}
 

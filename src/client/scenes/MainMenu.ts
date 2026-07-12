@@ -106,8 +106,7 @@ export class MainMenu extends Scene {
 	updateLayout(width: number, height: number) {
 		this.cameras.resize(width, height);
 
-		if (this.background)
-			this.background.setDisplaySize(width, height);
+		this.background.setDisplaySize(width, height);
 
 		this.scaleFactor = Math.min(height / 1600, 1);
 

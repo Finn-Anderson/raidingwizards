@@ -12,12 +12,12 @@ export class GameComponent {
 	stamina: number = 0;
 	maxStamina: number = 10;
 
-	healthBarContainer: Phaser.GameObjects.Rectangle;
-	healthBar: Phaser.GameObjects.Rectangle;
-	speedBarContainer: Phaser.GameObjects.Rectangle;
-	speedBar: Phaser.GameObjects.Rectangle;
+	healthBarContainer: Phaser.GameObjects.Rectangle | null;
+	healthBar: Phaser.GameObjects.Rectangle | null;
+	speedBarContainer: Phaser.GameObjects.Rectangle | null;
+	speedBar: Phaser.GameObjects.Rectangle | null;
 
-	abilityDisplay: {rectangle: Phaser.GameObjects.Rectangle, image: Phaser.GameObjects.Image, hoverComponent: HoverComponent}[] = [];
+	abilityDisplay: {rectangle: Phaser.GameObjects.Rectangle, image: Phaser.GameObjects.Image, hoverComponent: HoverComponent, turnOverlay: Phaser.GameObjects.Rectangle, turnTimer: Phaser.GameObjects.Text}[] = [];
 	debuffDisplay: {rectangle: Phaser.GameObjects.Rectangle, image: Phaser.GameObjects.Image, hoverComponent: HoverComponent}[] = [];
 	
 	ability1cooldown = 0;
@@ -25,22 +25,55 @@ export class GameComponent {
 
 	constructor(ai: AI) {
 		this.owner = ai;
+
+		this.healthBarContainer = null;
+		this.healthBar = null;
+
+		this.speedBarContainer = null;
+		this.speedBar = null;
 	}
 
 	createGame(bEnemy: boolean = false) {
 		this.health = this.owner.stats.health * 5;
 		this.maxHealth = this.health;
 
+		const width = this.owner.width * 1.5;
+
+		this.healthBarContainer = this.owner.scene.add.rectangle(0, 0, width, 20, 0x333333).setStrokeStyle(2, 0x121212).setRounded(50).setOrigin(0, 0.5);
+		this.healthBar = this.owner.scene.add.rectangle(0, 0, width - 4, 16, 0x29FF00).setStrokeStyle(2, 0x25e600).setRounded(50).setOrigin(0, 0.5);
+
+		this.speedBarContainer = this.owner.scene.add.rectangle(0, 0, width - 8, 16, 0x333333).setStrokeStyle(2, 0x121212).setRounded(50).setOrigin(0, 0.5);
+		this.speedBar = this.owner.scene.add.rectangle(0, 0, width - 12, 12, 0xffd700).setStrokeStyle(2, 0xe6c200).setRounded(50).setOrigin(0, 0.5);
+
 		if (bEnemy)
 			return;
 
 		const ability1: Ability = this.owner.scene.registry.get('abilities')[this.owner.stats.ability1Index];
-		const display1 = ability1.display(this.owner, 4, 4, 0);
-		this.abilityDisplay.push(display1);
+		const display1 = ability1.display(this.owner, 0, 0, 0);
+		const turnDisplay1 = this.createTurnDisplay();
+		this.abilityDisplay.push({rectangle: display1.rectangle, image: display1.image, hoverComponent: display1.hoverComponent, turnOverlay: turnDisplay1.turnOverlay, turnTimer: turnDisplay1.turnTimer});
 
 		const ability2 = this.owner.scene.registry.get('abilities')[this.owner.stats.ability2Index];
-		const display2 = ability2.display(this.owner, 4, 4, 0);
-		this.abilityDisplay.push(display2);
+		const display2 = ability2.display(this.owner, 0, 0, 0);
+		const turnDisplay2 = this.createTurnDisplay();
+		this.abilityDisplay.push({rectangle: display2.rectangle, image: display2.image, hoverComponent: display2.hoverComponent, turnOverlay: turnDisplay2.turnOverlay, turnTimer: turnDisplay2.turnTimer});
+	}
+
+	createTurnDisplay() {
+		const turnOverlay = this.owner.scene.add.rectangle(0, 0, 128, 128, 0x000000).setRounded(64).setAlpha(0.5).setScale(0).setInteractive({useHandCursor: false});
+
+		const turnTimer = this.owner.scene.add
+			.text(0, 0, `0`, {
+				fontFamily: '"Kristen ITC", arial, serif',
+				fontSize: 72,
+				color: '#ffffff',
+				stroke: '#f2f2f2',
+				strokeThickness: 2,
+			})
+			.setScale(0)
+			.setOrigin(0.5);
+
+		return {turnOverlay, turnTimer};
 	}
 
 	updateGameLayout(w: number, h: number, scale: number) {
@@ -59,21 +92,53 @@ export class GameComponent {
 				element.image.setScale(scale * 1.5);
 
 			element.hoverComponent.updateLayout(x, y, scale);
+
+			element.turnOverlay.setPosition(x, y);
+			if (element.turnOverlay.scale > 0)
+				element.turnOverlay.setScale(scale);
+
+			element.turnTimer.setPosition(x, y);
+			if (element.turnTimer.scale > 0)
+				element.turnTimer.setScale(scale);
 		});
 
 		const halfPoint = (this.debuffDisplay.length - 1) / 2;
 		this.debuffDisplay.forEach((element, index) => {
 			const x = w + (64 * (index - halfPoint)) * scale;
-			const y = h - 128 * scale;
+			const y = h - 142 * scale;
 
 			element.rectangle.setPosition(x, y);
 			element.rectangle.setScale(scale / 2);
 
 			element.image.setPosition(x, y);
-			element.image.setScale(scale / 2);
+			element.image.setScale(scale * 1.5 / 2);
 
 			element.hoverComponent.updateLayout(x, y, scale);
 		});
+
+		if (this.healthBarContainer) {
+			this.healthBarContainer.setPosition(w - (this.healthBarContainer.width / 2) * scale, h - 220 * scale);
+			if (this.healthBarContainer.scale > 0)
+				this.healthBarContainer.setScale(scale);
+		}
+		
+		if (this.healthBar) {
+			this.healthBar.setPosition(w - (this.healthBar.width / 2) * scale, h - 220 * scale);
+			if (this.healthBar.scale > 0)
+				this.healthBar.setScale((this.health / this.maxHealth) * scale, scale);
+		}
+		
+		if (this.speedBarContainer) {
+			this.speedBarContainer.setPosition(w - (this.speedBarContainer.width / 2) * scale, h - 192 * scale);
+			if (this.speedBarContainer.scale > 0)
+				this.speedBarContainer.setScale(scale);
+		}
+		
+		if (this.speedBar) {
+			this.speedBar.setPosition(w - (this.speedBar.width / 2) * scale, h - 192 * scale);
+			if (this.speedBar.scale > 0)
+				this.speedBar.setScale((this.stamina / this.maxStamina) * scale);
+		}
 	}
 
 	turn(targets: AI[], allies: AI[], auto: boolean) {
@@ -95,6 +160,7 @@ export class GameComponent {
 		}
 
 		this.stamina += speed;
+		this.speedBar!.setScale((this.stamina / this.maxStamina) * this.owner.storedScale, this.owner.storedScale);
 
 		if (this.stamina < this.maxStamina) {
 			scene.doTurn(this.owner);
@@ -102,7 +168,7 @@ export class GameComponent {
 			return;
 		}
 
-		this.stamina -= this.maxStamina;
+		this.clearDebuffs();
 		
 		let ability1: Ability = this.owner.scene.registry.get('abilities')[this.owner.stats.ability1Index];
 		let ability2: Ability = this.owner.scene.registry.get('abilities')[this.owner.stats.ability2Index];
@@ -112,7 +178,6 @@ export class GameComponent {
 		this.ability2cooldown = Math.max(this.ability2cooldown - 1, 0);
 
 		if (this.ability1cooldown > 0 && this.ability2cooldown > 0) {
-			this.clearDebuffs();
 			scene.doTurn(this.owner);
 
 			return;
@@ -143,7 +208,6 @@ export class GameComponent {
 			}
 
 			if (!mainTarget) {
-				this.clearDebuffs();
 				scene.doTurn(this.owner);
 
 				return;
@@ -152,24 +216,29 @@ export class GameComponent {
 			if (ability.type == 'health')
 				targets = allies;
 
-			if (ability == ability1)
-				this.ability1cooldown = ability.turns;
-			else
-				this.ability2cooldown = ability.turns;
-
 			ability.performAbility(this.owner, mainTarget, targets);
 		}
 		else {
 			this.owner.play(this.owner.identifier+'idle');
 
-			this.abilityDisplay.forEach((element) => { element.rectangle.setScale(this.owner.storedScale); element.image.setScale(this.owner.storedScale * 5) });
+			this.abilityDisplay.forEach((element, index) => { 
+				element.rectangle.setScale(this.owner.storedScale); 
+				element.image.setScale(this.owner.storedScale * 1.5);
+
+				if ((index == 0 && this.ability1cooldown > 0) || (index == 1 && this.ability2cooldown > 0)) {
+					element.turnOverlay.setScale(this.owner.storedScale).setDepth(1);
+					element.turnTimer.setScale(this.owner.storedScale).setDepth(1);
+
+					if (index == 0)
+						element.turnTimer.setText(this.ability1cooldown.toString());
+					else
+						element.turnTimer.setText(this.ability2cooldown.toString());
+				}
+			});
+
 			scene.skipContainer.setScale(this.owner.storedScale);
 			scene.skipImage.setScale(this.owner.storedScale);
-
-			// Add ability turn timer display + prevent interaction
 		}
-
-		this.clearDebuffs();
 	}
 
 	clearDebuffs() {
@@ -194,10 +263,26 @@ export class GameComponent {
 		else
 			this.owner.setTint(0x00ff57);
 
-		if (this.health <= 0)
+		this.healthBar!.setScale((this.health / this.maxHealth) * this.owner.storedScale, this.owner.storedScale);
+
+		if (this.health <= 0) {
 			this.owner.setRotation(90 * (Math.PI / 180)); // replace with gravestone
-		else
+
+			this.healthBarContainer!.setScale(0);
+			this.healthBar!.setScale(0);
+
+			this.speedBarContainer!.setScale(0);
+			this.speedBar!.setScale(0);
+		}
+		else if (this.owner.rotation == 90 * (Math.PI / 180)) {
 			this.owner.setRotation(0);
+
+			this.healthBarContainer!.setScale(this.owner.storedScale);
+			this.healthBar!.setScale((this.health / this.maxHealth) * this.owner.storedScale);
+
+			this.speedBarContainer!.setScale(this.owner.storedScale);
+			this.speedBar!.setScale((this.stamina / this.maxStamina) * this.owner.storedScale);
+		}
 
 		setTimeout(() => { this.owner.clearTint(); }, 400);
 	}

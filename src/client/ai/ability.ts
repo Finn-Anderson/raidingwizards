@@ -108,10 +108,18 @@ export class Ability {
 		owner.GameComponent.abilityDisplay.forEach((element) => { 
 			element.rectangle.setScale(0); 
 			element.image.setScale(0);
+		
+			element.turnOverlay.setScale(0);
+			element.turnTimer.setScale(0);
 
 			element.rectangle.setFillStyle(0x333333); 
 			element.rectangle.setStrokeStyle(2, 0x121212);
 		});
+
+		if (this == owner.scene.registry.get('abilities')[owner.stats.ability1Index])
+			owner.GameComponent.ability1cooldown = this.turns;
+		else
+			owner.GameComponent.ability2cooldown = this.turns;
 
 		const scene = owner.scene as Game;
 		scene.skipContainer.setScale(0);
@@ -177,6 +185,8 @@ export class Ability {
 		}
 		
 		damage = damage / defence;
+		damage = Math.round((damage + Number.EPSILON) * 100) / 100;
+
 		target.GameComponent.takeHealth(damage);
 
 		const scene = owner.scene as Game;

@@ -25,7 +25,7 @@ export class Leaderboard {
 				},
 				body: data 
 			});
-			if (!response.ok)
+			if (!response.ok || !scene.scene.manager.isActive(scene))
 				throw new Error(`Failed to fetch leaderboard: ${response.status}`);
 			
 			if (this.domElement)
