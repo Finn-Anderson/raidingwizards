@@ -37,15 +37,7 @@ export class Ability {
 	display(owner: AI, x: number, y: number, scale: number, customInteract: boolean = false): {rectangle: Phaser.GameObjects.Rectangle, image: Phaser.GameObjects.Image, hoverComponent: HoverComponent} {
 		const hoverComponent = new HoverComponent(owner.scene, x, y, scale);
 
-		let tint = 0xffffff;
-		if (this.type == 'attack') 
-			tint = 0xff0029;
-		else if (this.type == 'defence') 
-			tint = 0x5700ff;
-		else if (this.type == 'health') 
-			tint = 0x00ff57;
-		else if (this.type == 'speed') 
-			tint = 0x00a8ff;
+		let tint = this.getTint();
 
 		let size = 64;
 		if (owner.scene instanceof Game)
@@ -87,7 +79,15 @@ export class Ability {
 					let aiList: AI[] = [...owner.scene.wizards];
 					aiList.push(owner.scene.enemy as AI);
 					aiList.forEach((element) => {
-						element.filters?.external.addGlow(tint, 8, 0, scale);
+						const glow = element.filters?.external.addGlow(tint, 0, 0, 1, false, 10, 8);
+
+						element.scene.tweens.add({
+							targets: glow,
+							outerStrength: 2,
+							yoyo: true,
+							loop: -1,
+							ease: 'sine.inout'
+						});
 					});
 
 					owner.GameComponent.abilityDisplay.forEach((element) => { 
@@ -102,6 +102,20 @@ export class Ability {
 		}
 
 		return {rectangle, image, hoverComponent};
+	}
+
+	getTint(): number {
+		let tint = 0xffffff;
+		if (this.type == 'attack') 
+			tint = 0xff0029;
+		else if (this.type == 'defence') 
+			tint = 0x5700ff;
+		else if (this.type == 'health') 
+			tint = 0x00ff57;
+		else if (this.type == 'speed') 
+			tint = 0x00a8ff;
+
+		return tint;
 	}
 
 	performAbility(owner: AI, mainTarget: AI | null, targets: AI[]) {
@@ -143,7 +157,12 @@ export class Ability {
 				break;
 		}
 
-		owner.play(owner.identifier+'attack'); // add fx colour on staff based on ability type
+		owner.play(owner.identifier+'attack');
+		if (owner.GameComponent.staffEmitter) {
+			owner.GameComponent.staffEmitter.setParticleTint(this.getTint());
+			owner.GameComponent.staffEmitter.start();
+			owner.GameComponent.staffEmitter.setDepth(100);
+		}
 		
 		scene.selectedAbility = null;
 
@@ -185,12 +204,16 @@ export class Ability {
 		}
 		
 		damage = damage / defence;
-		damage = Math.round((damage + Number.EPSILON) * 100) / 100;
+		damage = Number(damage.toFixed(2));
+		if (damage > 0)
+			damage = Math.min(damage, target.GameComponent.health);
+		else
+			damage = Math.min(damage, target.GameComponent.maxHealth - target.GameComponent.health);
 
 		target.GameComponent.takeHealth(damage);
 
 		const scene = owner.scene as Game;
-		if (scene.enemy != owner) {
+		if (scene.enemy == target) {
 			scene.registry.set('damage', scene.registry.get('damage') + damage);
 			scene.updateDamageText();
 		}

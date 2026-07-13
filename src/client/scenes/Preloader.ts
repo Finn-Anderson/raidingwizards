@@ -25,7 +25,8 @@ export class Preloader extends Scene {
 
 		// Spritesheets
 		this.load.spritesheet('player', 'ai/player/player-spritesheet.png', {frameWidth: 100, frameHeight: 100});
-		this.load.spritesheet('enemy', 'ai/enemy/enemy1-spritesheet.png', {frameWidth: 100, frameHeight: 100});
+		this.load.spritesheet('enemy0', 'ai/enemy/enemy1-spritesheet.png', {frameWidth: 100, frameHeight: 100});
+		this.load.spritesheet('enemy1', 'ai/enemy/enemy2-spritesheet.png', {frameWidth: 200, frameHeight: 200});
 
 		// Main Menu
 		this.load.image('fight', 'fight.png');
@@ -35,6 +36,7 @@ export class Preloader extends Scene {
 		// Game
 		this.load.image('skip', 'skip.png');
 		this.load.image('loop', 'loop.png');
+		this.load.image('particle', 'particle.png');
 
 		// AI
 		this.load.image('attack', 'attack.png');

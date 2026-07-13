@@ -221,7 +221,10 @@ export class Game extends Scene {
 		this.damageImage.setPosition(8 * scaleFactor, 16 * scaleFactor);
 		this.damageImage.setScale(scaleFactor * 1.5);
 
-		this.damageText.setPosition(90 * scaleFactor, 8 * scaleFactor);
+		if (this.gameOverOverlay.alpha > 0)
+			this.damageText.setPosition(width / 2, height / 2);
+		else
+			this.damageText.setPosition(90 * scaleFactor, 8 * scaleFactor);
 		this.damageText.setScale(scaleFactor);
 		
 		this.wizards.forEach((ai) => {
@@ -231,9 +234,11 @@ export class Game extends Scene {
 			ai.updateLayout(x, y, scaleFactor);
 		});
 
-		this.enemy?.setPosition(width - 128 * scaleFactor, height / 2);
-		this.enemy?.setScale(scaleFactor);
-		this.enemy?.updateLayout(width - 128 * scaleFactor, height / 2, scaleFactor);
+		if (this.enemy) {
+			this.enemy.setPosition(width - 196 * scaleFactor, height / 2);
+			this.enemy.setScale(scaleFactor);
+			this.enemy.updateLayout(width - 196 * scaleFactor, height / 2, scaleFactor);
+		}
 
 		this.skipContainer.setPosition(360 * scaleFactor, height - 64 * scaleFactor);
 		if (this.skipContainer.scale > 0)
@@ -262,7 +267,7 @@ export class Game extends Scene {
 		this.gameOverOverlay.setPosition(0, 0);
 		this.gameOverOverlay.setDisplaySize(width, height);
 
-		this.gameOverText.setPosition(width / 2, height / 2);
+		this.gameOverText.setPosition(width / 2, height / 4);
 		this.gameOverText.setScale(scaleFactor);
   	}
 
@@ -288,6 +293,8 @@ export class Game extends Scene {
 	}
 
 	doTurn(last: AI | null) {
+		this.tweens.killAll();
+
 		let aiList: AI[] = [...this.wizards];
 		aiList.push(this.enemy as AI);
 		aiList.forEach((element) => {
@@ -368,7 +375,7 @@ export class Game extends Scene {
 		stats.ability1Index = firstAbility[Math.round(Math.random())] as number;
 		stats.ability2Index = abiltiesIndexList[Math.round(Math.random() * (length - 1))] as number;
 
-		this.enemy = new AI(this, width - 8 * scaleFactor, height / 2, 'enemy', -1).setScale(scaleFactor);
+		this.enemy = new AI(this, 0, 0, 'enemy' + Math.round(Math.random()), -1).setScale(scaleFactor);
 		let aiList: AI[] = [...this.wizards];
 		aiList.push(this.enemy);
 
@@ -413,6 +420,10 @@ export class Game extends Scene {
 
 		this.gameOverOverlay.setDepth(3);
 		this.gameOverText.setDepth(3);
+
+		this.damageText.setDepth(3).setAlpha(0).setOrigin(0.5);
+		this.damageText.setColor('#ffffff');
+		this.damageText.setStroke('#f2f2f2', 2);
 
 		void (async () => {
 			const username = this.registry.get('username');
@@ -507,6 +518,9 @@ export class Game extends Scene {
 	graduallyShowGameOver(alpha: number) {
 		this.gameOverOverlay.setAlpha(alpha / 2);
 		this.gameOverText.setAlpha(alpha);
+
+		this.damageImage.setAlpha(alpha);
+		this.damageText.setAlpha(alpha);
 
 		if (alpha == 1)
 			return;

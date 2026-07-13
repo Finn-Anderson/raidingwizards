@@ -22,8 +22,7 @@ export class AI extends Phaser.GameObjects.Sprite {
 		super(scene, x, y, texture, frame);
 		this.index = index;
 
-		this.displayWidth = 48;
-		this.displayHeight = 48;
+		this.setDisplaySize(48, 48);
 		
 		this.scene = scene;
 		scene.add.existing(this);

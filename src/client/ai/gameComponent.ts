@@ -17,6 +17,9 @@ export class GameComponent {
 	speedBarContainer: Phaser.GameObjects.Rectangle | null;
 	speedBar: Phaser.GameObjects.Rectangle | null;
 
+	emitter: Phaser.GameObjects.Particles.ParticleEmitter | null;
+	staffEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null;
+
 	abilityDisplay: {rectangle: Phaser.GameObjects.Rectangle, image: Phaser.GameObjects.Image, hoverComponent: HoverComponent, turnOverlay: Phaser.GameObjects.Rectangle, turnTimer: Phaser.GameObjects.Text}[] = [];
 	debuffDisplay: {rectangle: Phaser.GameObjects.Rectangle, image: Phaser.GameObjects.Image, hoverComponent: HoverComponent}[] = [];
 	
@@ -31,6 +34,9 @@ export class GameComponent {
 
 		this.speedBarContainer = null;
 		this.speedBar = null;
+
+		this.emitter = null;
+		this.staffEmitter = null;
 	}
 
 	createGame(bEnemy: boolean = false) {
@@ -45,6 +51,20 @@ export class GameComponent {
 		this.speedBarContainer = this.owner.scene.add.rectangle(0, 0, width - 8, 16, 0x333333).setStrokeStyle(2, 0x121212).setRounded(50).setOrigin(0, 0.5);
 		this.speedBar = this.owner.scene.add.rectangle(0, 0, width - 12, 12, 0xffd700).setStrokeStyle(2, 0xe6c200).setRounded(50).setOrigin(0, 0.5);
 
+		this.emitter = this.owner.scene.add.particles(0, 0, 'particle', {
+			angle: { min: 0, max: 360 },
+			speed: { min: 200, max: 400 },
+			lifespan: 1000,
+			gravityY: 0,
+			quantity: 10,
+			bounds: new Phaser.Geom.Rectangle(-100, -200, 1000, 750),
+			emitting: false,
+			alpha: { start: 1, end: 0 },
+		});
+
+		this.emitter.enableFilters();
+		this.emitter.filters?.external.addBokeh(0.5, 10, 0.2);
+
 		if (bEnemy)
 			return;
 
@@ -57,6 +77,21 @@ export class GameComponent {
 		const display2 = ability2.display(this.owner, 0, 0, 0);
 		const turnDisplay2 = this.createTurnDisplay();
 		this.abilityDisplay.push({rectangle: display2.rectangle, image: display2.image, hoverComponent: display2.hoverComponent, turnOverlay: turnDisplay2.turnOverlay, turnTimer: turnDisplay2.turnTimer});
+
+		this.staffEmitter = this.owner.scene.add.particles(0, 0, 'particle', {
+			angle: { min: -120, max: -60 },
+			speed: { min: 10, max: 20 },
+			lifespan: 300,
+			gravityY: 0,
+			frequency: 25,
+			bounds: new Phaser.Geom.Rectangle(-100, -200, 1000, 750),
+			emitting: false,
+			alpha: { start: 1, end: 1 },
+			duration: 100
+		});
+
+		this.staffEmitter.enableFilters();
+		this.staffEmitter.filters?.external.addBokeh(0.5, 2, 0.2);
 	}
 
 	createTurnDisplay() {
@@ -102,10 +137,12 @@ export class GameComponent {
 				element.turnTimer.setScale(scale);
 		});
 
+		const height = this.owner.height / 2;
+
 		const halfPoint = (this.debuffDisplay.length - 1) / 2;
 		this.debuffDisplay.forEach((element, index) => {
 			const x = w + (64 * (index - halfPoint)) * scale;
-			const y = h - 142 * scale;
+			const y = h - height;
 
 			element.rectangle.setPosition(x, y);
 			element.rectangle.setScale(scale / 2);
@@ -117,27 +154,37 @@ export class GameComponent {
 		});
 
 		if (this.healthBarContainer) {
-			this.healthBarContainer.setPosition(w - (this.healthBarContainer.width / 2) * scale, h - 220 * scale);
+			this.healthBarContainer.setPosition(w - (this.healthBarContainer.width / 2) * scale, h - height - 82 * scale);
 			if (this.healthBarContainer.scale > 0)
 				this.healthBarContainer.setScale(scale);
 		}
 		
 		if (this.healthBar) {
-			this.healthBar.setPosition(w - (this.healthBar.width / 2) * scale, h - 220 * scale);
+			this.healthBar.setPosition(w - (this.healthBar.width / 2) * scale, h - height - 82 * scale);
 			if (this.healthBar.scale > 0)
 				this.healthBar.setScale((this.health / this.maxHealth) * scale, scale);
 		}
 		
 		if (this.speedBarContainer) {
-			this.speedBarContainer.setPosition(w - (this.speedBarContainer.width / 2) * scale, h - 192 * scale);
+			this.speedBarContainer.setPosition(w - (this.speedBarContainer.width / 2) * scale, h - height - 50 * scale);
 			if (this.speedBarContainer.scale > 0)
 				this.speedBarContainer.setScale(scale);
 		}
 		
 		if (this.speedBar) {
-			this.speedBar.setPosition(w - (this.speedBar.width / 2) * scale, h - 192 * scale);
+			this.speedBar.setPosition(w - (this.speedBar.width / 2) * scale, h - height - 50 * scale);
 			if (this.speedBar.scale > 0)
 				this.speedBar.setScale((this.stamina / this.maxStamina) * scale);
+		}
+
+		if (this.emitter) {
+			this.emitter.setPosition(w, h);
+			this.emitter.setScale(scale);
+		}
+
+		if (this.staffEmitter) {
+			this.staffEmitter.setPosition(w + 60 * scale, h - 50 * scale);
+			this.staffEmitter.setScale(scale);
 		}
 	}
 
@@ -256,17 +303,26 @@ export class GameComponent {
 		if (damage == 0)
 			return;
 
+		const prevHealth = this.health;
 		this.health = Math.max(Math.min(this.health - damage, this.maxHealth), 0);
 
-		if (damage > 0)
-			this.owner.setTint(0xff0029);
-		else
-			this.owner.setTint(0x00ff57);
+		let tint = 0xff0029;
+		if (damage < 0)
+			tint = 0x00ff57;
+
+		this.owner.setTint(tint);
+		this.emitter!.setParticleTint(tint);
+		this.emitter!.explode(20, 0, 0);
+		this.emitter!.setDepth(100);
 
 		this.healthBar!.setScale((this.health / this.maxHealth) * this.owner.storedScale, this.owner.storedScale);
 
 		if (this.health <= 0) {
-			this.owner.setRotation(90 * (Math.PI / 180)); // replace with gravestone
+			let deg = 90;
+			if (this.owner.scene.wizards.includes(this.owner))
+				deg = -90;
+
+			this.owner.setRotation(deg * (Math.PI / 180));
 
 			this.healthBarContainer!.setScale(0);
 			this.healthBar!.setScale(0);
@@ -274,8 +330,9 @@ export class GameComponent {
 			this.speedBarContainer!.setScale(0);
 			this.speedBar!.setScale(0);
 		}
-		else if (this.owner.rotation == 90 * (Math.PI / 180)) {
+		else if (prevHealth <= 0) {
 			this.owner.setRotation(0);
+			this.owner.setFrame(0);
 
 			this.healthBarContainer!.setScale(this.owner.storedScale);
 			this.healthBar!.setScale((this.health / this.maxHealth) * this.owner.storedScale);
@@ -284,7 +341,14 @@ export class GameComponent {
 			this.speedBar!.setScale((this.stamina / this.maxStamina) * this.owner.storedScale);
 		}
 
-		setTimeout(() => { this.owner.clearTint(); }, 400);
+		setTimeout(() => { 
+			this.owner.clearTint(); 
+
+			if (this.health <= 0 && this.owner.scene.wizards.includes(this.owner)) {
+				this.owner.setRotation(0);
+				this.owner.setFrame(3);
+			}
+		}, 400);
 	}
 
 	selectTarget(ability: Ability, targets: AI[], allies: AI[]): AI | null {
