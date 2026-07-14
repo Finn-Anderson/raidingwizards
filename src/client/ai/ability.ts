@@ -75,10 +75,12 @@ export class Ability {
 				}
 				else {
 					owner.scene.selectedAbility = this;
+					owner.scene.tweens.killAll();
 					
 					let aiList: AI[] = [...owner.scene.wizards];
 					aiList.push(owner.scene.enemy as AI);
 					aiList.forEach((element) => {
+						element.filters?.external.clear();
 						const glow = element.filters?.external.addGlow(tint, 0, 0, 1, false, 10, 8);
 
 						element.scene.tweens.add({
@@ -136,8 +138,8 @@ export class Ability {
 			owner.GameComponent.ability2cooldown = this.turns;
 
 		const scene = owner.scene as Game;
-		scene.skipContainer.setScale(0);
-		scene.skipImage.setScale(0);
+		scene.skipContainer!.setScale(0);
+		scene.skipImage!.setScale(0);
 
 		for (var i = targets.length - 1; i > -1; i--) {
 			if ((this.type == 'health' && targets[i]!.GameComponent.health >= targets[i]!.GameComponent.maxHealth) || targets[i]!.GameComponent.health <= 0)
@@ -167,9 +169,11 @@ export class Ability {
 		scene.selectedAbility = null;
 
 		setTimeout(() => {
-			owner.stop();
-			owner.setFrame(0);
-
+			if (owner.GameComponent.health > 0) {
+				owner.stop();
+				owner.setFrame(0);
+			}
+			
 			const scene: Game = owner.scene as Game;
 			const target: AI = mainTarget as AI;
 			if (target == scene.enemy && target.GameComponent.health <= 0)
@@ -198,23 +202,21 @@ export class Ability {
 			defence = defence / 2;
 		}
 
-		if (this.type == 'health') {
-			damage *= -1;
-			defence = 1;
-		}
+		let finalDamage = (damage / defence) * damage;
+		if (this.type == 'health')
+			finalDamage = damage * -1;
 		
-		damage = damage / defence;
-		damage = Number(damage.toFixed(2));
-		if (damage > 0)
-			damage = Math.min(damage, target.GameComponent.health);
+		finalDamage = Number(finalDamage.toFixed(2));
+		if (finalDamage > 0)
+			finalDamage = Math.min(finalDamage, target.GameComponent.health);
 		else
-			damage = Math.min(damage, target.GameComponent.maxHealth - target.GameComponent.health);
+			finalDamage = Math.min(finalDamage, target.GameComponent.maxHealth - target.GameComponent.health);
 
-		target.GameComponent.takeHealth(damage);
+		target.GameComponent.takeHealth(finalDamage);
 
 		const scene = owner.scene as Game;
 		if (scene.enemy == target) {
-			scene.registry.set('damage', scene.registry.get('damage') + damage);
+			scene.registry.set('damage', scene.registry.get('damage') + finalDamage);
 			scene.updateDamageText();
 		}
 

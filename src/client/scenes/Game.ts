@@ -5,33 +5,70 @@ import { Ability } from '../ai/ability';
 import { NumberResponse } from '../../shared/api';
 
 export class Game extends Scene {
-	background: Phaser.GameObjects.Image;
+	background: Phaser.GameObjects.Image | null;
 
-	damageImage: Phaser.GameObjects.Image;
-	damageText: Phaser.GameObjects.Text;
+	damageImage: Phaser.GameObjects.Image | null;
+	damageText: Phaser.GameObjects.Text | null;
 
-	skipContainer: Phaser.GameObjects.Rectangle;
-	skipImage: Phaser.GameObjects.Image;
+	skipContainer: Phaser.GameObjects.Rectangle | null;
+	skipImage: Phaser.GameObjects.Image | null;
 
-	loopContainer: Phaser.GameObjects.Rectangle;
-	loopImage: Phaser.GameObjects.Image; // In order: single, loop, infinity
+	loopContainer: Phaser.GameObjects.Rectangle | null;
+	loopImage: Phaser.GameObjects.Image | null;
 
-	autoContainer: Phaser.GameObjects.Rectangle;
-	autoText: Phaser.GameObjects.Text;
+	autoContainer: Phaser.GameObjects.Rectangle | null;
+	autoText: Phaser.GameObjects.Text | null;
 
-	gameOverOverlay: Phaser.GameObjects.Rectangle;
-	gameOverText: Phaser.GameObjects.Text;
+	gameOverOverlay: Phaser.GameObjects.Rectangle | null;
+	gameOverDamageText: Phaser.GameObjects.Text | null;
+	gameOverText: Phaser.GameObjects.Text | null;
+	continueText: Phaser.GameObjects.Text | null;
 
-	wizards: AI[] = [];
-	enemy: AI | null = null;
+	wizards: AI[];
+	enemy: AI | null;
 
-	selectedAbility: Ability | null = null;
-	selectedAI: AI;
+	selectedAbility: Ability | null;
+	selectedAI: AI | null;
 
-	level: number = 0;
+	level: number;
+
+	timerHandler: number;
+	gameOverAlpha: number;
 
 	constructor() {
 		super('Game');
+	}
+
+	init() {
+		this.background = null;
+
+		this.damageImage = null;
+		this.damageText = null;
+		
+		this.skipContainer = null;
+		this.skipImage = null;
+		
+		this.loopContainer = null;
+		this.loopImage = null;
+		
+		this.autoContainer = null;
+		this.autoText = null;
+
+		this.gameOverOverlay = null;
+		this.gameOverDamageText = null;
+		this.gameOverText = null;
+		this.continueText = null;
+
+		this.wizards = [];
+		this.enemy = null;
+
+		this.selectedAbility = null;
+		this.selectedAI = null;
+
+		this.level = 0;
+
+		this.timerHandler = -1;
+		this.gameOverAlpha = 0;
 	}
 
   	create() {
@@ -63,7 +100,7 @@ export class Game extends Scene {
 				if (!this.selectedAbility)
 					return;
 
-				this.selectedAbility.performAbility(this.selectedAI, ai, [...this.wizards]);
+				this.selectedAbility.performAbility(this.selectedAI!, ai, [...this.wizards]);
 			});
 
 			this.wizards.push(ai);
@@ -77,20 +114,20 @@ export class Game extends Scene {
 
 		this.skipContainer = this.add.rectangle(0, 0, 112, 112, 0x333333).setStrokeStyle(2, 0x121212).setRounded(48).setInteractive({useHandCursor: true}).setScale(0)
 			.on('pointerover', () => { 
-				this.skipContainer.setFillStyle(0xff5700); 
-				this.skipContainer.setStrokeStyle(2, 0xe64e00);
+				this.skipContainer!.setFillStyle(0xff5700); 
+				this.skipContainer!.setStrokeStyle(2, 0xe64e00);
 			})
 			.on('pointerout', () => { 
-				this.skipContainer.setFillStyle(0x333333); 
-				this.skipContainer.setStrokeStyle(2, 0x121212); 
+				this.skipContainer!.setFillStyle(0x333333); 
+				this.skipContainer!.setStrokeStyle(2, 0x121212); 
 			})
 			.on('pointerup', () => {
-				this.selectedAI.stop();
-				this.selectedAI.setFrame(0);
+				this.selectedAI!.stop();
+				this.selectedAI!.setFrame(0);
 
-				this.selectedAI.GameComponent.abilityDisplay.forEach((element) => { element.rectangle.setScale(0); element.image.setScale(0) });
-				this.skipContainer.setScale(0);
-				this.skipImage.setScale(0);
+				this.selectedAI!.GameComponent.abilityDisplay.forEach((element) => { element.rectangle.setScale(0); element.image.setScale(0) });
+				this.skipContainer!.setScale(0);
+				this.skipImage!.setScale(0);
 
 				this.doTurn(this.selectedAI);
 			});
@@ -108,26 +145,26 @@ export class Game extends Scene {
 				if (this.registry.get('loop'))
 					return;
 
-				this.loopContainer.setFillStyle(0xff5700); 
-				this.loopContainer.setStrokeStyle(2, 0xe64e00);
+				this.loopContainer!.setFillStyle(0xff5700); 
+				this.loopContainer!.setStrokeStyle(2, 0xe64e00);
 			})
 			.on('pointerout', () => { 
 				if (this.registry.get('loop'))
 					return;
 				
-				this.loopContainer.setFillStyle(0x333333); 
-				this.loopContainer.setStrokeStyle(2, 0x121212); 
+				this.loopContainer!.setFillStyle(0x333333); 
+				this.loopContainer!.setStrokeStyle(2, 0x121212); 
 			})
 			.on('pointerup', () => {
 				let loop = !this.registry.get('loop');
 
 				if (loop) {
-					this.loopContainer.setFillStyle(0xff5700);
-					this.loopContainer.setStrokeStyle(2, 0xe64e00);
+					this.loopContainer!.setFillStyle(0xff5700);
+					this.loopContainer!.setStrokeStyle(2, 0xe64e00);
 				}
 				else {
-					this.loopContainer.setFillStyle(0x333333);
-					this.loopContainer.setStrokeStyle(2, 0x121212);
+					this.loopContainer!.setFillStyle(0x333333);
+					this.loopContainer!.setStrokeStyle(2, 0x121212);
 				}
 
 				this.registry.set('loop', loop);
@@ -146,33 +183,33 @@ export class Game extends Scene {
 				if (this.registry.get('auto'))
 					return;
 
-				this.autoContainer.setFillStyle(0xff5700); 
-				this.autoContainer.setStrokeStyle(2, 0xe64e00);
+				this.autoContainer!.setFillStyle(0xff5700); 
+				this.autoContainer!.setStrokeStyle(2, 0xe64e00);
 			})
 			.on('pointerout', () => { 
 				if (this.registry.get('auto'))
 					return;
 
-				this.autoContainer.setFillStyle(0x333333); 
-				this.autoContainer.setStrokeStyle(2, 0x121212); 
+				this.autoContainer!.setFillStyle(0x333333); 
+				this.autoContainer!.setStrokeStyle(2, 0x121212); 
 			})
 			.on('pointerup', () => {
 				let auto = !this.registry.get('auto');
 
 				if (auto) {
-					this.autoContainer.setFillStyle(0xff5700);
-					this.autoContainer.setStrokeStyle(2, 0xe64e00);
+					this.autoContainer!.setFillStyle(0xff5700);
+					this.autoContainer!.setStrokeStyle(2, 0xe64e00);
 				}
 				else {
-					this.autoContainer.setFillStyle(0x333333);
-					this.autoContainer.setStrokeStyle(2, 0x121212);
+					this.autoContainer!.setFillStyle(0x333333);
+					this.autoContainer!.setStrokeStyle(2, 0x121212);
 				}
 
 				if (auto && this.selectedAI != this.enemy) {
 					let targets: AI[] = [this.enemy as AI];
 					let allies: AI[] = this.wizards;
 
-					this.selectedAI.GameComponent.turn(targets, allies, auto);
+					this.selectedAI!.GameComponent.turn(this, targets, allies, auto);
 				}
 
 				this.registry.set('auto', auto);
@@ -200,6 +237,26 @@ export class Game extends Scene {
 			})
 			.setAlpha(0)
 			.setOrigin(0.5);
+		this.gameOverDamageText = this.add
+			.text(0, 0, `0`, {
+				fontFamily: '"Kristen ITC", arial, serif',
+				fontSize: 96,
+				color: '#ffffff',
+				stroke: '#f2f2f2',
+				strokeThickness: 2,
+			})
+			.setAlpha(0)
+			.setOrigin(0.5);
+		this.continueText = this.add
+			.text(0, 0, `continue`, {
+				fontFamily: '"Kristen ITC", arial, serif',
+				fontSize: 48,
+				color: '#ffffff',
+				stroke: '#f2f2f2',
+				strokeThickness: 2,
+			})
+			.setAlpha(0)
+			.setOrigin(0.5);
 
 		this.updateLayout(width, height);
 		this.scale.on('resize', (gameSize: Phaser.Structs.Size) => {
@@ -218,20 +275,17 @@ export class Game extends Scene {
 
 		const scaleFactor = Math.min(height / 1600, 1);
 
-		this.damageImage.setPosition(8 * scaleFactor, 16 * scaleFactor);
-		this.damageImage.setScale(scaleFactor * 1.5);
+		this.damageImage!.setPosition(8 * scaleFactor, 16 * scaleFactor);
+		this.damageImage!.setScale(scaleFactor * 1.5);
 
-		if (this.gameOverOverlay.alpha > 0)
-			this.damageText.setPosition(width / 2, height / 2);
-		else
-			this.damageText.setPosition(90 * scaleFactor, 8 * scaleFactor);
-		this.damageText.setScale(scaleFactor);
+		this.damageText!.setPosition(90 * scaleFactor, 8 * scaleFactor);
+		this.damageText!.setScale(scaleFactor);
 		
 		this.wizards.forEach((ai) => {
 			const x = ai.index % 2 == 0 ? width / 8 : width / 4 + width / 8;
 			const y = height / 4 + Math.floor(ai.index / 2) * height / 4;
 
-			ai.updateLayout(x, y, scaleFactor);
+			ai.updateLayout(x, y, scaleFactor, height);
 		});
 
 		if (this.enemy) {
@@ -240,39 +294,45 @@ export class Game extends Scene {
 			this.enemy.updateLayout(width - 196 * scaleFactor, height / 2, scaleFactor);
 		}
 
-		this.skipContainer.setPosition(360 * scaleFactor, height - 64 * scaleFactor);
-		if (this.skipContainer.scale > 0)
-			this.skipContainer.setScale(scaleFactor);
+		this.skipContainer!.setPosition(360 * scaleFactor, height - 64 * scaleFactor);
+		if (this.skipContainer!.scale > 0)
+			this.skipContainer!.setScale(scaleFactor);
 
-		this.skipImage.setPosition(360 * scaleFactor, height - 64 * scaleFactor);
-		if (this.skipImage.scale > 0)
-			this.skipImage.setScale(scaleFactor);
+		this.skipImage!.setPosition(360 * scaleFactor, height - 64 * scaleFactor);
+		if (this.skipImage!.scale > 0)
+			this.skipImage!.setScale(scaleFactor);
 
-		this.loopContainer.setPosition(width - 200 * scaleFactor, height - 64 * scaleFactor);
-		if (this.loopContainer.scale > 0)
-			this.loopContainer.setScale(scaleFactor);
+		this.loopContainer!.setPosition(width - 200 * scaleFactor, height - 64 * scaleFactor);
+		if (this.loopContainer!.scale > 0)
+			this.loopContainer!.setScale(scaleFactor);
 
-		this.loopImage.setPosition(width - 200 * scaleFactor, height - 64 * scaleFactor);
-		if (this.loopImage.scale > 0)
-			this.loopImage.setScale(scaleFactor);
+		this.loopImage!.setPosition(width - 200 * scaleFactor, height - 64 * scaleFactor);
+		if (this.loopImage!.scale > 0)
+			this.loopImage!.setScale(scaleFactor);
 
-		this.autoContainer.setPosition(width - 72 * scaleFactor, height - 64 * scaleFactor);
-		if (this.autoContainer.scale > 0)
-			this.autoContainer.setScale(scaleFactor);
+		this.autoContainer!.setPosition(width - 72 * scaleFactor, height - 64 * scaleFactor);
+		if (this.autoContainer!.scale > 0)
+			this.autoContainer!.setScale(scaleFactor);
 
-		this.autoText.setPosition(width - 108 * scaleFactor, height - 86 * scaleFactor);
-		if (this.autoText.scale > 0)
-			this.autoText.setScale(scaleFactor);
+		this.autoText!.setPosition(width - 108 * scaleFactor, height - 86 * scaleFactor);
+		if (this.autoText!.scale > 0)
+			this.autoText!.setScale(scaleFactor);
 
-		this.gameOverOverlay.setPosition(0, 0);
-		this.gameOverOverlay.setDisplaySize(width, height);
+		this.gameOverOverlay!.setPosition(0, 0);
+		this.gameOverOverlay!.setDisplaySize(width, height);
 
-		this.gameOverText.setPosition(width / 2, height / 4);
-		this.gameOverText.setScale(scaleFactor);
+		this.gameOverText!.setPosition(width / 2, height / 4);
+		this.gameOverText!.setScale(scaleFactor);
+
+		this.gameOverDamageText!.setPosition(width / 2, height / 2);
+		this.gameOverDamageText!.setScale(scaleFactor);
+
+		this.continueText!.setPosition(width / 2, height * 0.75);
+		this.continueText!.setScale(scaleFactor);
   	}
 
  	updateDamageText() {
-		this.damageText.setText(`${this.abbrvNum(this.registry.get('damage'))}`);
+		this.damageText!.setText(`${this.abbrvNum(this.registry.get('damage'))}`);
   	}
 
 	abbrvNum(number: number): string {
@@ -319,10 +379,13 @@ export class Game extends Scene {
 		if (last) {
 			index = aiList.findIndex((element) => element == last);
 
-			if (last.GameComponent.stamina >= last.GameComponent.maxStamina)
+			if (last.GameComponent.stamina >= last.GameComponent.maxStamina) {
 				last.GameComponent.stamina -= last.GameComponent.maxStamina;
+				last.GameComponent.clearDebuffs();
+			}
 
-			last.GameComponent.speedBar!.setScale((last.GameComponent.stamina / last.GameComponent.maxStamina) * last.storedScale, last.storedScale);
+			if (last.GameComponent.health > 0)
+				last.GameComponent.speedBar!.setScale((last.GameComponent.stamina / last.GameComponent.maxStamina) * last.storedScale, last.storedScale);
 		}
 
 		index++;
@@ -340,7 +403,7 @@ export class Game extends Scene {
 		}
 
 		this.selectedAI = ai;
-		ai!.GameComponent.turn(targets, allies, auto);
+		ai!.GameComponent.turn(this, targets, allies, auto);
 	}
 
 	spawnEnemy() {
@@ -386,7 +449,7 @@ export class Game extends Scene {
 			if (!this.selectedAbility)
 				return;
 
-			this.selectedAbility.performAbility(this.selectedAI, this.enemy, [this.enemy as AI]);
+			this.selectedAbility.performAbility(this.selectedAI!, this.enemy, [this.enemy as AI]);
 		});
 
 		let maxStamina = 1;
@@ -409,21 +472,21 @@ export class Game extends Scene {
 			return;
 		}
 
-		this.skipContainer.setScale(0);
-		this.skipImage.setScale(0);
+		this.skipContainer!.setScale(0);
+		this.skipImage!.setScale(0);
 
-		this.loopContainer.setScale(0);
-		this.loopImage.setScale(0);
+		this.loopContainer!.setScale(0);
+		this.loopImage!.setScale(0);
 
-		this.autoContainer.setScale(0);
-		this.autoText.setScale(0);
+		this.autoContainer!.setScale(0);
+		this.autoText!.setScale(0);
 
-		this.gameOverOverlay.setDepth(3);
-		this.gameOverText.setDepth(3);
+		this.gameOverDamageText!.setText(`${this.abbrvNum(this.registry.get('damage'))}`);
 
-		this.damageText.setDepth(3).setAlpha(0).setOrigin(0.5);
-		this.damageText.setColor('#ffffff');
-		this.damageText.setStroke('#f2f2f2', 2);
+		this.gameOverOverlay!.setDepth(3);
+		this.gameOverText!.setDepth(3);
+		this.gameOverDamageText!.setDepth(3);
+		this.continueText!.setDepth(3);
 
 		void (async () => {
 			const username = this.registry.get('username');
@@ -509,22 +572,22 @@ export class Game extends Scene {
 				}
 			}
 
-			this.gameOverOverlay.setInteractive({ useHandCursor: true });
+			this.gameOverOverlay!.setInteractive({ useHandCursor: true });
 		})();
 
 		this.graduallyShowGameOver(0.01);
+		this.timerHandler = setInterval(() => { this.graduallyShowGameOver(0.01) }, 0.01);
 	}
 
 	graduallyShowGameOver(alpha: number) {
-		this.gameOverOverlay.setAlpha(alpha / 2);
-		this.gameOverText.setAlpha(alpha);
+		this.gameOverAlpha += alpha;
 
-		this.damageImage.setAlpha(alpha);
-		this.damageText.setAlpha(alpha);
+		this.gameOverOverlay!.setAlpha(this.gameOverAlpha / 2);
+		this.gameOverText!.setAlpha(this.gameOverAlpha);
+		this.gameOverDamageText!.setAlpha(this.gameOverAlpha);
+		this.continueText!.setAlpha(this.gameOverAlpha);
 
-		if (alpha == 1)
-			return;
-
-		setTimeout(() => { this.graduallyShowGameOver(alpha + 0.01); }, 0.01);
+		if (this.gameOverAlpha >= 1)
+			clearInterval(this.timerHandler);
 	}
 }

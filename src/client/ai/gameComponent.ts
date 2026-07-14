@@ -7,10 +7,10 @@ import { HoverComponent } from './hoverComponent';
 export class GameComponent {
 	owner: AI;
 
-	health: number = 5;
-	maxHealth: number = this.health;
-	stamina: number = 0;
-	maxStamina: number = 10;
+	health: number;
+	maxHealth: number;
+	stamina: number;
+	maxStamina: number;
 
 	healthBarContainer: Phaser.GameObjects.Rectangle | null;
 	healthBar: Phaser.GameObjects.Rectangle | null;
@@ -20,14 +20,19 @@ export class GameComponent {
 	emitter: Phaser.GameObjects.Particles.ParticleEmitter | null;
 	staffEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null;
 
-	abilityDisplay: {rectangle: Phaser.GameObjects.Rectangle, image: Phaser.GameObjects.Image, hoverComponent: HoverComponent, turnOverlay: Phaser.GameObjects.Rectangle, turnTimer: Phaser.GameObjects.Text}[] = [];
-	debuffDisplay: {rectangle: Phaser.GameObjects.Rectangle, image: Phaser.GameObjects.Image, hoverComponent: HoverComponent}[] = [];
+	abilityDisplay: {rectangle: Phaser.GameObjects.Rectangle, image: Phaser.GameObjects.Image, hoverComponent: HoverComponent, turnOverlay: Phaser.GameObjects.Rectangle, turnTimer: Phaser.GameObjects.Text}[];
+	debuffDisplay: {rectangle: Phaser.GameObjects.Rectangle, image: Phaser.GameObjects.Image, hoverComponent: HoverComponent}[];
 	
 	ability1cooldown = 0;
 	ability2cooldown = 0;
 
 	constructor(ai: AI) {
 		this.owner = ai;
+
+		this.health = 5;
+		this.maxHealth = this.health;
+		this.stamina = 0;
+		this.maxStamina = 10;
 
 		this.healthBarContainer = null;
 		this.healthBar = null;
@@ -37,6 +42,9 @@ export class GameComponent {
 
 		this.emitter = null;
 		this.staffEmitter = null;
+
+		this.abilityDisplay = [];
+		this.debuffDisplay = [];
 	}
 
 	createGame(bEnemy: boolean = false) {
@@ -111,12 +119,10 @@ export class GameComponent {
 		return {turnOverlay, turnTimer};
 	}
 
-	updateGameLayout(w: number, h: number, scale: number) {
+	updateGameLayout(w: number, h: number, scale: number, frameHeight:number) {
 		this.abilityDisplay.forEach((element, index) => {
-			const height = this.owner.scene.scale.height;
-
 			const x = (152 + 72 * (index * 2 - 1)) * scale;
-			const y = height - 72 * scale;
+			const y = frameHeight - 72 * scale;
 
 			element.rectangle.setPosition(x, y);
 			if (element.rectangle.scale > 0)
@@ -174,7 +180,7 @@ export class GameComponent {
 		if (this.speedBar) {
 			this.speedBar.setPosition(w - (this.speedBar.width / 2) * scale, h - height - 50 * scale);
 			if (this.speedBar.scale > 0)
-				this.speedBar.setScale((this.stamina / this.maxStamina) * scale);
+				this.speedBar.setScale((this.stamina / this.maxStamina) * scale, scale);
 		}
 
 		if (this.emitter) {
@@ -188,9 +194,7 @@ export class GameComponent {
 		}
 	}
 
-	turn(targets: AI[], allies: AI[], auto: boolean) {
-		const scene = this.owner.scene as Game;
-
+	turn(scene: Game, targets: AI[], allies: AI[], auto: boolean) {
 		if (this.health <= 0) {
 			scene.doTurn(this.owner);
 
@@ -214,8 +218,6 @@ export class GameComponent {
 
 			return;
 		}
-
-		this.clearDebuffs();
 		
 		let ability1: Ability = this.owner.scene.registry.get('abilities')[this.owner.stats.ability1Index];
 		let ability2: Ability = this.owner.scene.registry.get('abilities')[this.owner.stats.ability2Index];
@@ -283,8 +285,8 @@ export class GameComponent {
 				}
 			});
 
-			scene.skipContainer.setScale(this.owner.storedScale);
-			scene.skipImage.setScale(this.owner.storedScale);
+			scene.skipContainer!.setScale(this.owner.storedScale);
+			scene.skipImage!.setScale(this.owner.storedScale);
 		}
 	}
 
@@ -322,6 +324,7 @@ export class GameComponent {
 			if (this.owner.scene.wizards.includes(this.owner))
 				deg = -90;
 
+			this.owner.stop();
 			this.owner.setRotation(deg * (Math.PI / 180));
 
 			this.healthBarContainer!.setScale(0);
@@ -335,10 +338,10 @@ export class GameComponent {
 			this.owner.setFrame(0);
 
 			this.healthBarContainer!.setScale(this.owner.storedScale);
-			this.healthBar!.setScale((this.health / this.maxHealth) * this.owner.storedScale);
+			this.healthBar!.setScale((this.health / this.maxHealth) * this.owner.storedScale, this.owner.storedScale);
 
 			this.speedBarContainer!.setScale(this.owner.storedScale);
-			this.speedBar!.setScale((this.stamina / this.maxStamina) * this.owner.storedScale);
+			this.speedBar!.setScale((this.stamina / this.maxStamina) * this.owner.storedScale, this.owner.storedScale);
 		}
 
 		setTimeout(() => { 

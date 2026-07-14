@@ -1,4 +1,4 @@
-import { Scene } from 'phaser';
+import { Game, Scene } from 'phaser';
 import { DropdownList } from '../dropdown';
 import { Leaderboard } from '../leaderboard';
 import { AI } from '../ai/ai';
@@ -20,14 +20,22 @@ export class MainMenu extends Scene {
 	dropdown: DropdownList;
 	leaderboard: Leaderboard;
 
-	wizards: AI[] = [];
-	buttons: AIAdder[] = [];
+	wizards: AI[];
+	buttons: AIAdder[];
 	
-	scaleFactor: number = 1;
-	abilitySelector: AbilitySelector | null = null;
+	scaleFactor: number;
+	abilitySelector: AbilitySelector | null;
 
 	constructor() {
 		super('MainMenu');
+	}
+
+	init() {
+		this.wizards = [];
+		this.buttons = [];
+
+		this.scaleFactor = 1;
+		this.abilitySelector = null;
 	}
 
 	create() {
@@ -152,9 +160,9 @@ export class MainMenu extends Scene {
 		const currentMoney = this.registry.get('money');
 		this.moneyText.setText(`${this.abbrvNum(currentMoney)}`);
 
-		for (const element of this.wizards) {
-			element.MainMenuComponent.updateUpgradeDisplay();
-		}
+		this.wizards.forEach((element) => {
+			element.MainMenuComponent.updateUpgradeDisplay(this, currentMoney);
+		});
 
 		const bShow = currentMoney >= 10;
 		this.buttons.forEach((element) => {

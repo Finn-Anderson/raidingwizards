@@ -71,23 +71,20 @@ export class AI extends Phaser.GameObjects.Sprite {
 		});
 	}
 
-	updateLayout(w: number, h: number, scale: number) {
+	updateLayout(w: number, h: number, scale: number, frameHeight: number = 1) {
 		this.setPosition(w, h);
 		this.setScale(scale * 2);
 
 		if (this.scene instanceof MainMenu)
 			this.MainMenuComponent.updateMainMenuLayout(w, h, scale);
 		else
-			this.GameComponent.updateGameLayout(w, h, scale);
+			this.GameComponent.updateGameLayout(w, h, scale, frameHeight);
 
 		this.storedScale = scale;
 	}
 
 	setStats(newStats: {health: number, defence: number, attack: number, speed: number, ability1Index: number, ability2Index: number}) {
 		this.stats = newStats;
-
-		if (this.scene instanceof MainMenu)
-			this.MainMenuComponent.updateUpgradeDisplay();
 	}
 
 	getLevel() {

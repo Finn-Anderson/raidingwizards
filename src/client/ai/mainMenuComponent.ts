@@ -136,11 +136,12 @@ export class MainMenuComponent {
 		this.save();
 	}
 
-	updateUpgradeDisplay() {
-		const bShow = this.owner.scene.registry.get('money') >= this.owner.getLevel();
+	updateUpgradeDisplay(scene: MainMenu, money: number) {
+		const level = this.owner.getLevel();
+		const bShow = money >= level;
 
 		for (var i = 0; i < this.statsText.length; i++) {
-			var num = 0;
+			let num = 0;
 			if (i == 0) 
 				num = this.owner.stats.attack;
 			else if (i == 1)
@@ -150,12 +151,12 @@ export class MainMenuComponent {
 			else
 				num = this.owner.stats.speed;
 
-			this.statsText[i]!.setText(this.owner.scene.abbrvNum(num));
+			this.statsText[i]!.setText(scene.abbrvNum(num));
 
 			this.upgradeIcons[i]!.setScale(bShow ? this.owner.storedScale : 0);
 		}
 
-		this.costText?.setText(this.owner.scene.abbrvNum(this.owner.getLevel()));
+		this.costText!.setText(scene.abbrvNum(level));
 	}
 
 	regenerateAbilities() {
