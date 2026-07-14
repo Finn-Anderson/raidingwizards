@@ -466,12 +466,6 @@ export class Game extends Scene {
 	}
 
 	gameOver() {
-		if (this.registry.get('loop')) {
-			this.scene.start('Game');
-
-			return;
-		}
-
 		this.skipContainer!.setScale(0);
 		this.skipImage!.setScale(0);
 
@@ -481,6 +475,12 @@ export class Game extends Scene {
 		this.autoContainer!.setScale(0);
 		this.autoText!.setScale(0);
 
+		if (this.registry.get('loop')) {
+			this.save();
+
+			return;
+		}
+
 		this.gameOverDamageText!.setText(`${this.abbrvNum(this.registry.get('damage'))}`);
 
 		this.gameOverOverlay!.setDepth(3);
@@ -488,6 +488,25 @@ export class Game extends Scene {
 		this.gameOverDamageText!.setDepth(3);
 		this.continueText!.setDepth(3);
 
+		this.graduallyShowGameOver(0.01);
+		this.timerHandler = setInterval(() => { this.graduallyShowGameOver(0.01) }, 0.01);
+
+		this.save();
+	}
+
+	graduallyShowGameOver(alpha: number) {
+		this.gameOverAlpha += alpha;
+
+		this.gameOverOverlay!.setAlpha(this.gameOverAlpha / 2);
+		this.gameOverText!.setAlpha(this.gameOverAlpha);
+		this.gameOverDamageText!.setAlpha(this.gameOverAlpha);
+		this.continueText!.setAlpha(this.gameOverAlpha);
+
+		if (this.gameOverAlpha >= 1)
+			clearInterval(this.timerHandler);
+	}
+
+	save() {
 		void (async () => {
 			const username = this.registry.get('username');
 			const subreddit = this.registry.get('subreddit');
@@ -572,22 +591,10 @@ export class Game extends Scene {
 				}
 			}
 
-			this.gameOverOverlay!.setInteractive({ useHandCursor: true });
+			if (this.registry.get('loop'))
+				this.scene.start('Game');
+			else
+				this.gameOverOverlay!.setInteractive({ useHandCursor: true });
 		})();
-
-		this.graduallyShowGameOver(0.01);
-		this.timerHandler = setInterval(() => { this.graduallyShowGameOver(0.01) }, 0.01);
-	}
-
-	graduallyShowGameOver(alpha: number) {
-		this.gameOverAlpha += alpha;
-
-		this.gameOverOverlay!.setAlpha(this.gameOverAlpha / 2);
-		this.gameOverText!.setAlpha(this.gameOverAlpha);
-		this.gameOverDamageText!.setAlpha(this.gameOverAlpha);
-		this.continueText!.setAlpha(this.gameOverAlpha);
-
-		if (this.gameOverAlpha >= 1)
-			clearInterval(this.timerHandler);
 	}
 }

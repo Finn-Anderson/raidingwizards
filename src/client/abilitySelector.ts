@@ -20,9 +20,10 @@ export class AbilitySelector {
 	descriptionText: Phaser.GameObjects.Text;
 
 	owner: AI;
+	abilityIndex: number;
 	statAbilityIndex: number;
 
-	constructor(owner: AI, ability: Ability) {
+	constructor(owner: AI, ability: Ability, statIndex: number) {
 		this.owner = owner;
 
 		const { width, height } = this.owner.scene.scale;
@@ -63,8 +64,8 @@ export class AbilitySelector {
 			.setOrigin(1, 0);
 
 		this.contentsContainer = this.owner.scene.add.graphics({fillStyle: { color: 0x333333 }, lineStyle: { width: 2, color: 0x121212 }})
-			.fillRoundedRect(0, 0, 500, 700 - 64, { tl: 0, tr: 0, bl: 4, br: 4 })
-			.strokeRoundedRect(0, 0, 500, 700 - 64, { tl: 0, tr: 0, bl: 4, br: 4 })
+			.fillRoundedRect(0, 0, 500, 750 - 64, { tl: 0, tr: 0, bl: 4, br: 4 })
+			.strokeRoundedRect(0, 0, 500, 750 - 64, { tl: 0, tr: 0, bl: 4, br: 4 })
 			.setDepth(1);
 
 		this.descriptionDivider = this.owner.scene.add.graphics({fillStyle: { color: 0x121212 }})
@@ -91,9 +92,11 @@ export class AbilitySelector {
 			.setDepth(1)
 			.setWordWrapWidth(500, true);
 
-		this.statAbilityIndex = this.owner.stats.ability1Index;
-		if (this.owner.scene.registry.get('abilities')[this.statAbilityIndex] != ability)
-			this.statAbilityIndex = this.owner.stats.ability2Index;
+		this.statAbilityIndex = statIndex;
+		if (this.statAbilityIndex == 1)
+			this.abilityIndex = this.owner.stats.ability1Index;
+		else
+			this.abilityIndex = this.owner.stats.ability2Index;
 
 		this.owner.scene.registry.get('abilities').forEach((element: Ability, index: number) => {
 			let column = index - (Math.floor(index / 4) * 4);
@@ -107,13 +110,13 @@ export class AbilitySelector {
 			ability.image.setDepth(1);
 
 			ability.rectangle.on('pointerup', () => {
-				if (this.owner.stats.ability1Index == this.statAbilityIndex)
+				if (this.statAbilityIndex == 1)
 					this.owner.stats.ability1Index = index;
 				else
 					this.owner.stats.ability2Index = index;
 
 				this.setDescription(this.owner.scene.registry.get('abilities')[index]);
-				this.statAbilityIndex = index;
+				this.abilityIndex = index;
 
 				this.updateSelectedVisual();
 				this.owner.MainMenuComponent.regenerateAbilities();
@@ -161,7 +164,7 @@ export class AbilitySelector {
 
 	updateSelectedVisual() {
 		this.abilities.forEach((element, index) => {
-			if (this.statAbilityIndex == index) {
+			if (this.abilityIndex == index) {
 				element.rectangle.setFillStyle(0xff5700);
 				element.rectangle.setStrokeStyle(2, 0xe64e00);
 			}

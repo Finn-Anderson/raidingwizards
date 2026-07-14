@@ -34,7 +34,7 @@ export class Ability {
 		this.length = length;
 	}
 
-	display(owner: AI, x: number, y: number, scale: number, customInteract: boolean = false): {rectangle: Phaser.GameObjects.Rectangle, image: Phaser.GameObjects.Image, hoverComponent: HoverComponent} {
+	display(owner: AI, x: number, y: number, scale: number, customInteract: boolean = false, index: number = 1): {rectangle: Phaser.GameObjects.Rectangle, image: Phaser.GameObjects.Image, hoverComponent: HoverComponent} {
 		const hoverComponent = new HoverComponent(owner.scene, x, y, scale);
 
 		let tint = this.getTint();
@@ -69,7 +69,7 @@ export class Ability {
 			rectangle.on('pointerup', () => {
 				if (owner.scene instanceof MainMenu) {
 					if (!owner.scene.abilitySelector) {
-						owner.scene.abilitySelector = new AbilitySelector(owner, this);
+						owner.scene.abilitySelector = new AbilitySelector(owner, this, index);
 						hoverComponent.clearDisplayTimer();
 					}
 				}

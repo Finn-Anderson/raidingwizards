@@ -169,11 +169,11 @@ export class MainMenuComponent {
 		this.abilityDisplay.length = 0;
 
 		const ability1: Ability = this.owner.scene.registry.get('abilities')[this.owner.stats.ability1Index];
-		const display1 = ability1.display(this.owner, 4, 4, 0);
+		const display1 = ability1.display(this.owner, 4, 4, 0, false, 1);
 		this.abilityDisplay.push(display1);
 
 		const ability2 = this.owner.scene.registry.get('abilities')[this.owner.stats.ability2Index];
-		const display2 = ability2.display(this.owner, 4, 4, 0);
+		const display2 = ability2.display(this.owner, 4, 4, 0, false, 2);
 		this.abilityDisplay.push(display2);
 
 		const { width, height } = this.owner.scene.scale;
