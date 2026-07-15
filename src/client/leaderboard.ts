@@ -10,69 +10,71 @@ export class Leaderboard {
 		this.refreshLeaderboard(scene, x, y);
 	}
 
-	async refreshLeaderboard(scene: MainMenu, x: number, y: number) {
-		try {
-			var payload = {
-				subreddit: scene.registry.get('subreddit')
-			};
-			const data = JSON.stringify( payload );
-					
-			const response = await fetch('/api/leaderboard', { 
-				method: 'POST',
-				headers: {
-					'Accept': 'application/json',
-					'Content-Type': 'application/json'
-				},
-				body: data 
-			});
-			if (!response.ok || !scene.scene.manager.isActive(scene))
-				throw new Error(`Failed to fetch leaderboard: ${response.status}`);
-			
-			if (this.domElement)
-				this.domElement.destroy();
+	refreshLeaderboard(scene: MainMenu, x: number, y: number) {
+		void (async () => {
+			try {
+				const payload = {
+					subreddit: scene.registry.get('subreddit')
+				};
+				const data = JSON.stringify( payload );
+						
+				const response = await fetch('/api/leaderboard', { 
+					method: 'POST',
+					headers: {
+						'Accept': 'application/json',
+						'Content-Type': 'application/json'
+					},
+					body: data 
+				});
+				if (!response.ok || !scene.scene.manager.isActive(scene))
+					throw new Error(`Failed to fetch leaderboard: ${response.status}`);
+				
+				if (this.domElement)
+					this.domElement.destroy();
 
-			const responseData = (await response.json()) as LeaderboardResponse;
-			responseData.list.forEach((row, index) => {
-				if (index == 0) {
-					this.table = document.createElement('table');
+				const responseData = (await response.json()) as LeaderboardResponse;
+				responseData.list.forEach((row, index) => {
+					if (index == 0) {
+						this.table = document.createElement('table');
 
-					const trHeader = document.createElement('tr');
-					trHeader.id = 'table-header'
+						const trHeader = document.createElement('tr');
+						trHeader.id = 'table-header'
 
-					const th = document.createElement('th');
-					th.innerHTML = 'Leaderboard';
-					th.colSpan = 3;
-					trHeader.appendChild(th);
+						const th = document.createElement('th');
+						th.innerHTML = 'Leaderboard';
+						th.colSpan = 3;
+						trHeader.appendChild(th);
 
-					this.table.appendChild(trHeader);
-				}
+						this.table.appendChild(trHeader);
+					}
 
-				const tr = document.createElement('tr');
+					const tr = document.createElement('tr');
 
-				const tdRank = document.createElement('td');
-				tdRank.innerHTML = row.rank.toString();
-				if (row.member == scene.registry.get('subreddit'))
-					tdRank.id = 'subreddit';
-				tr.appendChild(tdRank);
+					const tdRank = document.createElement('td');
+					tdRank.innerHTML = row.rank.toString();
+					if (row.member == scene.registry.get('subreddit'))
+						tdRank.id = 'subreddit';
+					tr.appendChild(tdRank);
 
-				const tdSubreddit = document.createElement('td');
-				tdSubreddit.innerHTML = row.member;
-				tdSubreddit.style.fontSize = (42 - row.member.length).toString() + 'px';
-				tr.appendChild(tdSubreddit);
+					const tdSubreddit = document.createElement('td');
+					tdSubreddit.innerHTML = row.member;
+					tdSubreddit.style.fontSize = (42 - row.member.length).toString() + 'px';
+					tr.appendChild(tdSubreddit);
 
-				const tdLevel = document.createElement('td');
-				tdLevel.innerHTML = scene.abbrvNum(row.score);
-				tr.appendChild(tdLevel);
+					const tdLevel = document.createElement('td');
+					tdLevel.innerHTML = scene.abbrvNum(row.score);
+					tr.appendChild(tdLevel);
 
-				this.table.appendChild(tr);
-			});
-		} catch (error) {
-			console.error('Failed to get leaderboard:', error);
-		}
+					this.table.appendChild(tr);
+				});
+			} catch (error) {
+				console.error('Failed to get leaderboard:', error);
+			}
 
-		this.domElement = scene.add.dom(x, y, this.table).setOrigin(1, 0);
-		const scaleFactor = Math.min(Math.min(scene.scale.width / 1024, scene.scale.height / 768), 1);
-		this.updateLayout(scene.scale.width - 8 * scaleFactor, 8 * scaleFactor, scaleFactor)
+			this.domElement = scene.add.dom(x, y, this.table).setOrigin(1, 0);
+			const scaleFactor = Math.min(Math.min(scene.scale.width / 1024, scene.scale.height / 768), 1);
+			this.updateLayout(scene.scale.width - 8 * scaleFactor, 8 * scaleFactor, scaleFactor);
+		})();
 	}
 
 	updateLayout(w: number, h: number, scale: number) {

@@ -1,4 +1,5 @@
-import { Game, Scene } from 'phaser';
+import { Scene } from 'phaser';
+import * as Phaser from 'phaser';
 import { DropdownList } from '../dropdown';
 import { Leaderboard } from '../leaderboard';
 import { AI } from '../ai/ai';
@@ -141,7 +142,7 @@ export class MainMenu extends Scene {
 		this.leaderboard.updateLayout(width - 8 * this.scaleFactor, 8 * this.scaleFactor, this.scaleFactor);
 
 		this.wizards.forEach((ai) => {
-			const x = ai.index % 2 == 0 ? width / 4 : width / 2 + width / 4;
+			const x = ai.index % 2 == 0 ? width / 4 + 48 * this.scaleFactor : width / 2 + width / 4 - 48 * this.scaleFactor;
 			const y = height / 4 + Math.floor(ai.index / 2) * height / 4;
 
 			ai.updateLayout(x, y, this.scaleFactor);
@@ -161,6 +162,7 @@ export class MainMenu extends Scene {
 		this.moneyText.setText(`${this.abbrvNum(currentMoney)}`);
 
 		this.wizards.forEach((element) => {
+			element.updateStatDisplay(this);
 			element.MainMenuComponent.updateUpgradeDisplay(this, currentMoney);
 		});
 
@@ -184,14 +186,14 @@ export class MainMenu extends Scene {
 	abbrvNum(number: number): string {
 		const abbrv = ['k', 'm', 'b', 't', 'sn'];
 
-		for (var i = abbrv.length - 1; i > -1; i--) {
+		for (let i = abbrv.length - 1; i > -1; i--) {
 			const size = Math.pow(10, (i + 1) * 3);
 
 			if (size <= number) {
 				if (abbrv[i] == 'sn')
 					return number.toExponential();
 				else
-					return number.toString() + String(abbrv[i]);
+					return (number / size).toFixed(2) + String(abbrv[i]);
 			}
 		}
 

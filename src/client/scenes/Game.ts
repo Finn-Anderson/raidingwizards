@@ -24,6 +24,9 @@ export class Game extends Scene {
 	gameOverText: Phaser.GameObjects.Text | null;
 	continueText: Phaser.GameObjects.Text | null;
 
+	commentButton: Phaser.GameObjects.Rectangle | null;
+	commentText: Phaser.GameObjects.Text | null;
+
 	wizards: AI[];
 	enemy: AI | null;
 
@@ -58,6 +61,9 @@ export class Game extends Scene {
 		this.gameOverDamageText = null;
 		this.gameOverText = null;
 		this.continueText = null;
+
+		this.commentButton = null;
+		this.commentText = null;
 
 		this.wizards = [];
 		this.enemy = null;
@@ -97,7 +103,7 @@ export class Game extends Scene {
 			ai.create();
 			ai.enableFilters().setInteractive({ useHandCursor: true });
 			ai.on('pointerup', () => {
-				if (!this.selectedAbility)
+				if (!this.selectedAbility || (ai.GameComponent.health == 0 && this.selectedAbility.name != 'Revive'))
 					return;
 
 				this.selectedAbility.performAbility(this.selectedAI!, ai, [...this.wizards]);
@@ -108,7 +114,7 @@ export class Game extends Scene {
 			this.level += ai.getLevel();
 		}
 
-		this.level = Math.floor(this.level * 0.9);
+		this.level = Math.floor(this.level * 0.5);
 
 		this.spawnEnemy();
 
@@ -156,7 +162,7 @@ export class Game extends Scene {
 				this.loopContainer!.setStrokeStyle(2, 0x121212); 
 			})
 			.on('pointerup', () => {
-				let loop = !this.registry.get('loop');
+				const loop = !this.registry.get('loop');
 
 				if (loop) {
 					this.loopContainer!.setFillStyle(0xff5700);
@@ -194,7 +200,7 @@ export class Game extends Scene {
 				this.autoContainer!.setStrokeStyle(2, 0x121212); 
 			})
 			.on('pointerup', () => {
-				let auto = !this.registry.get('auto');
+				const auto = !this.registry.get('auto');
 
 				if (auto) {
 					this.autoContainer!.setFillStyle(0xff5700);
@@ -205,12 +211,8 @@ export class Game extends Scene {
 					this.autoContainer!.setStrokeStyle(2, 0x121212);
 				}
 
-				if (auto && this.selectedAI != this.enemy) {
-					let targets: AI[] = [this.enemy as AI];
-					let allies: AI[] = this.wizards;
-
-					this.selectedAI!.GameComponent.turn(this, targets, allies, auto);
-				}
+				if (auto && this.selectedAI != this.enemy && this.selectedAI!.anims.currentAnim!.key == this.selectedAI!.identifier+'idle')
+					this.selectedAI!.GameComponent.performAutoAttack(this, null, [this.enemy as AI], [...this.wizards]);
 
 				this.registry.set('auto', auto);
 			});
@@ -258,6 +260,29 @@ export class Game extends Scene {
 			.setAlpha(0)
 			.setOrigin(0.5);
 
+		this.commentButton = this.add.rectangle(0, 0, 720, 72, 0x333333).setStrokeStyle(2, 0x121212).setRounded(4).setAlpha(0)
+			.on('pointerover', () => { 
+				this.commentButton!.setFillStyle(0xff5700); 
+				this.commentButton!.setStrokeStyle(2, 0xe64e00);
+			})
+			.on('pointerout', () => {
+				this.commentButton!.setFillStyle(0x333333); 
+				this.commentButton!.setStrokeStyle(2, 0x121212);
+			})
+			.on('pointerup', () => {
+				this.postComment();
+			});
+		this.commentText = this.add
+			.text(0, 0, `Post Result to Comments`, {
+				fontFamily: '"Kristen ITC", arial, serif',
+				fontSize: 48,
+				color: '#ffffff',
+				stroke: '#f2f2f2',
+				strokeThickness: 2,
+			})
+			.setAlpha(0)
+			.setOrigin(0.5);
+
 		this.updateLayout(width, height);
 		this.scale.on('resize', (gameSize: Phaser.Structs.Size) => {
 			const { width, height } = gameSize;
@@ -282,7 +307,7 @@ export class Game extends Scene {
 		this.damageText!.setScale(scaleFactor);
 		
 		this.wizards.forEach((ai) => {
-			const x = ai.index % 2 == 0 ? width / 8 : width / 4 + width / 8;
+			const x = ai.index % 2 == 0 ? width / 8 - 40 * scaleFactor : width / 4 + width / 8;
 			const y = height / 4 + Math.floor(ai.index / 2) * height / 4;
 
 			ai.updateLayout(x, y, scaleFactor, height);
@@ -329,6 +354,12 @@ export class Game extends Scene {
 
 		this.continueText!.setPosition(width / 2, height * 0.75);
 		this.continueText!.setScale(scaleFactor);
+
+		this.commentButton!.setPosition(width / 2, height * 0.9);
+		this.commentButton!.setScale(scaleFactor);
+
+		this.commentText!.setPosition(width / 2, height * 0.9);
+		this.commentText!.setScale(scaleFactor);
   	}
 
  	updateDamageText() {
@@ -338,14 +369,14 @@ export class Game extends Scene {
 	abbrvNum(number: number): string {
 		const abbrv = ['k', 'm', 'b', 't', 'sn'];
 
-		for (var i = abbrv.length - 1; i > -1; i--) {
+		for (let i = abbrv.length - 1; i > -1; i--) {
 			const size = Math.pow(10, (i + 1) * 3);
 
 			if (size <= number) {
 				if (abbrv[i] == 'sn')
 					return number.toExponential();
 				else
-					return number.toString() + String(abbrv[i]);
+					return (number / size).toFixed(2) + String(abbrv[i]);
 			}
 		}
 
@@ -355,7 +386,7 @@ export class Game extends Scene {
 	doTurn(last: AI | null) {
 		this.tweens.killAll();
 
-		let aiList: AI[] = [...this.wizards];
+		const aiList: AI[] = [...this.wizards];
 		aiList.push(this.enemy as AI);
 		aiList.forEach((element) => {
 			element.filters?.external.clear();
@@ -385,14 +416,14 @@ export class Game extends Scene {
 			}
 
 			if (last.GameComponent.health > 0)
-				last.GameComponent.speedBar!.setScale((last.GameComponent.stamina / last.GameComponent.maxStamina) * last.storedScale, last.storedScale);
+				last.GameComponent.speedBar!.setScale(Math.min(last.GameComponent.stamina / last.GameComponent.maxStamina, 1) * last.storedScale, last.storedScale);
 		}
 
 		index++;
 		if (index == aiList.length)
 			index = 0;
 
-		let ai: AI = aiList[index] as AI;
+		const ai: AI = aiList[index] as AI;
 		let auto: boolean = this.registry.get('auto');
 		let targets: AI[] = [this.enemy as AI];
 		let allies: AI[] = [...this.wizards];
@@ -413,9 +444,9 @@ export class Game extends Scene {
 		const { width, height } = this.scale;
 		const scaleFactor = Math.min(Math.min(width / 1024, height / 768), 1);
 
-		let stats: {health: number, defence: number, attack: number, speed: number, ability1Index: number, ability2Index: number} = {health: 1, defence: 1, attack: 1, speed: 1, ability1Index: 0, ability2Index: 2};
-		for (var i = 0; i < this.level; i++) {
-			let num = Math.round(Math.random() * 3);
+		const stats: {health: number, defence: number, attack: number, speed: number, ability1Index: number, ability2Index: number} = {health: 1, defence: 1, attack: 1, speed: 1, ability1Index: 0, ability2Index: 2};
+		for (let i = 0; i < this.level; i++) {
+			const num = Math.round(Math.random() * 3);
 			if (num == 0)
 				stats.health++;
 			else if (num == 1)
@@ -426,20 +457,22 @@ export class Game extends Scene {
 				stats.speed++;
 		}
 
-		let firstAbility = [0, 3];
-
-		let secondAbility = [...this.registry.get('abilities')] as Ability[];
+		const secondAbility = [...this.registry.get('abilities')] as Ability[];
 		secondAbility.splice(0, 1);
 		secondAbility.splice(3, 1);
 
-		let length = secondAbility.length;
-		let abiltiesIndexList: number[] = Array.from({length}, (_, index) => index);
+		const length = secondAbility.length;
+		const abiltiesIndexList: number[] = Array.from({length}, (_, index) => index);
 
-		stats.ability1Index = firstAbility[Math.round(Math.random())] as number;
+		if (stats.attack >= stats.defence)
+			stats.ability1Index = 0;
+		else
+			stats.ability1Index = 3;
+
 		stats.ability2Index = abiltiesIndexList[Math.round(Math.random() * (length - 1))] as number;
 
-		this.enemy = new AI(this, 0, 0, 'enemy' + Math.round(Math.random()), -1).setScale(scaleFactor);
-		let aiList: AI[] = [...this.wizards];
+		this.enemy = new AI(this, 0, 0, 'enemy' + Math.round(Math.random()), -1);
+		const aiList: AI[] = [...this.wizards];
 		aiList.push(this.enemy);
 
 		this.enemy.setStats(stats);
@@ -463,6 +496,12 @@ export class Game extends Scene {
 			element.GameComponent.maxStamina = maxStamina;
 			element.GameComponent.speedBar!.setScale(0, element.storedScale);
 		});
+		
+		this.enemy.setPosition(width - 196 * scaleFactor, height / 2);
+		this.enemy.setScale(scaleFactor);
+		this.enemy.updateLayout(width - 196 * scaleFactor, height / 2, scaleFactor);
+
+		this.level *= 1.25;
 	}
 
 	gameOver() {
@@ -488,6 +527,9 @@ export class Game extends Scene {
 		this.gameOverDamageText!.setDepth(3);
 		this.continueText!.setDepth(3);
 
+		this.commentButton!.setDepth(3).setInteractive({ useHandCursor: true });
+		this.commentText!.setDepth(3);
+
 		this.graduallyShowGameOver(0.01);
 		this.timerHandler = setInterval(() => { this.graduallyShowGameOver(0.01) }, 0.01);
 
@@ -497,10 +539,13 @@ export class Game extends Scene {
 	graduallyShowGameOver(alpha: number) {
 		this.gameOverAlpha += alpha;
 
-		this.gameOverOverlay!.setAlpha(this.gameOverAlpha / 2);
+		this.gameOverOverlay!.setAlpha(this.gameOverAlpha * 0.75);
 		this.gameOverText!.setAlpha(this.gameOverAlpha);
 		this.gameOverDamageText!.setAlpha(this.gameOverAlpha);
 		this.continueText!.setAlpha(this.gameOverAlpha);
+
+		this.commentButton!.setAlpha(this.gameOverAlpha);
+		this.commentText!.setAlpha(this.gameOverAlpha);
 
 		if (this.gameOverAlpha >= 1)
 			clearInterval(this.timerHandler);
@@ -511,18 +556,18 @@ export class Game extends Scene {
 			const username = this.registry.get('username');
 			const subreddit = this.registry.get('subreddit');
 			const damage = this.registry.get('damage');
-			const money = this.registry.get('money') + Math.ceil(damage * 0.1);
+			const money = this.registry.get('money') + Math.ceil(damage * 0.2);
 
 			if (username == undefined) {
 				this.registry.set('money', money);
 			}
 			else {
 				try {
-					var moneyPayload = {
+					const payload = {
 						money: money,
 						username: username
 					};
-					const data = JSON.stringify( moneyPayload );
+					const data = JSON.stringify( payload );
 							
 					const response = await fetch('/api/setmoney', { 
 						method: 'POST',
@@ -545,12 +590,12 @@ export class Game extends Scene {
 			}
 			else {
 				try {
-					var levelPayload = {
+					const payload = {
 						level: damage,
 						subreddit: subreddit
 					};
 					
-					const data = JSON.stringify( levelPayload );
+					const data = JSON.stringify( payload );
 							
 					const response = await fetch('/api/setlevel', { 
 						method: 'POST',
@@ -570,12 +615,12 @@ export class Game extends Scene {
 			
 			if (username != 'anonymous') {
 				try {
-					var uiPayload = {
+					const payload = {
 						auto: this.registry.get('auto'),
 						loop: this.registry.get('loop')
 					};
 					
-					const data = JSON.stringify( uiPayload );
+					const data = JSON.stringify( payload );
 							
 					const response = await fetch('/api/saveui', { 
 						method: 'POST',
@@ -595,6 +640,37 @@ export class Game extends Scene {
 				this.scene.start('Game');
 			else
 				this.gameOverOverlay!.setInteractive({ useHandCursor: true });
+		})();
+	}
+
+	postComment() {
+		if (this.registry.get('subreddit') == undefined)
+			return;
+
+		this.commentButton!.removeInteractive(true).destroy();
+		this.commentText!.destroy();
+
+		void (async () => {
+			try {
+				const payload = {
+					score: this.registry.get('damage'),
+					subreddit: this.registry.get('subreddit')
+				};
+				
+				const data = JSON.stringify( payload );
+						
+				const response = await fetch('/api/postComment', { 
+					method: 'POST',
+					headers: {
+						'Accept': 'application/json',
+						'Content-Type': 'application/json'
+					},
+					body: data 
+				});
+				if (!response.ok) throw new Error(`API error: ${response.status}`);
+			} catch (error) {
+				console.error('Failed to post comment:', error);
+			}
 		})();
 	}
 }

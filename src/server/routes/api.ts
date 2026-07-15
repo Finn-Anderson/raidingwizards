@@ -25,18 +25,14 @@ api.get('/init', async (c) => {
 
 	try {
 		const username = (await reddit.getCurrentUsername())?.toLowerCase();
-		var money = undefined; 
-		var subreddit = undefined;
-		var level = undefined;
-		var auto = false;
-		var loop = false;
-		var ai = [];
-		for (var i = 0; i < 1; i++)
+		let money = undefined; 
+		let subreddit = undefined;
+		let level = undefined;
+		let auto = false;
+		let loop = false;
+		let ai = [];
+		for (let i = 0; i < 1; i++)
 			ai.push({health: 1, defence: 1, attack: 1, speed: 1, ability1Index: 0, ability2Index: 2});
-
-		//redis.del(username + 'ai');
-		//redis.del(username + 'money');
-		//redis.del('leaderboard');
 
 		if (username != undefined) {
 			money = await redis.get(username + 'money');
@@ -97,7 +93,7 @@ api.post('/leaderboard', async (c) => {
 	try {
 		const requestBody = await c.req.raw.clone().json();
 
-		let options: ZRangeOptions = {
+		const options: ZRangeOptions = {
 			reverse: true,
 			by: 'score',
 			limit: {
@@ -107,8 +103,8 @@ api.post('/leaderboard', async (c) => {
 		};
 		const range: {member: string, score: number}[] = await redis.zRange('leaderboard', 0, Infinity, options);
 
-		var bContainsSubreddit = false;
-		let list: {rank: number, member: string, score: number}[] = [];
+		let bContainsSubreddit = false;
+		const list: {rank: number, member: string, score: number}[] = [];
 		range.forEach((element, index) => {
 			list.push({rank: index, member: element.member, score: element.score});
 
@@ -151,7 +147,7 @@ api.post('/getsubreddits', async (c) => {
 
 	try {
 		const requestBody = await c.req.raw.clone().json();
-		let list: {member: string, score: number}[] = [];
+		const list: {member: string, score: number}[] = [];
 
 		const zScanResponse = await redis.zScan('leaderboard', 0, '*'+requestBody.value+'*', 5);
 		zScanResponse.members.forEach((element) => {
@@ -292,3 +288,25 @@ api.post('/saveui', async (c) => {
 		console.log('Upgrade AI Error:', await c.req.text());
 	}
 });
+
+api.post('/postComment', async (c) => {
+	const { postId } = context;
+	if (!postId) {
+		return c.json<ErrorResponse>({
+			status: 'error',
+			message: 'postId is required',
+		}, 400);
+	}
+	
+	try {
+		const requestBody = await c.req.raw.clone().json();
+
+		if (requestBody.subreddit == undefined)
+			return;
+
+		await reddit.submitComment({ runAs: 'USER', id: postId, text: `I scored ${requestBody.score} for ${requestBody.subreddit}` });
+	}
+ 	catch (e) {
+		console.log('Submit comment Error:', await c.req.text());
+	}
+})

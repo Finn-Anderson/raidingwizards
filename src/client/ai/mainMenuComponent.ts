@@ -8,8 +8,6 @@ export class MainMenuComponent {
 	owner: AI;
 
 	upgradeIcons: Phaser.GameObjects.Image[] = [];
-	statsIcons: Phaser.GameObjects.Image[] = [];
-	statsText: Phaser.GameObjects.Text[] = [];
 	costImage: Phaser.GameObjects.Image;
 	costText: Phaser.GameObjects.Text | null = null;
 
@@ -20,38 +18,16 @@ export class MainMenuComponent {
 	}
 
 	createMainMenu() {
-		for (var i = 0; i < 4; i++) {
-			let str = '';
-			let num = 1;
-			if (i == 0) {
+		for (let i = 0; i < 4; i++) {
+			let str: string;
+			if (i == 0)
 				str = 'attack';
-				num = this.owner.stats.attack;
-			}
-			else if (i == 1) {
+			else if (i == 1)
 				str = 'defence';
-				num = this.owner.stats.defence;
-			}
-			else if (i == 2) {
+			else if (i == 2)
 				str = 'health';
-				num = this.owner.stats.health;
-			}
-			else {
+			else
 				str = 'speed';
-				num = this.owner.stats.speed;
-			}
-
-			const textImg = this.owner.scene.add.image(4, 4, str).setOrigin(0).setInteractive();
-			this.statsIcons.push(textImg);
-
-			const text = this.owner.scene.add
-				.text(4, 4, `${this.owner.scene.abbrvNum(num)}`, {
-					fontFamily: '"Kristen ITC", arial, serif',
-					fontSize: 48,
-					color: '#ffffff',
-					stroke: '#f2f2f2',
-					strokeThickness: 2,
-				}).setOrigin(0).setInteractive();
-			this.statsText.push(text);
 
 			const image = this.owner.scene.add.image(4, 4, 'upgrade').setOrigin(0).setInteractive({useHandCursor: true}).setTint(0x29FF00)
 				.on('pointerover', () => { image.setTint(0xff5700); })
@@ -59,9 +35,6 @@ export class MainMenuComponent {
 				.on('pointerup', () => { this.upgradeStat(str); });
 			
 			this.upgradeIcons.push(image);
-
-			this.owner.setupMouseOverAnim(textImg);
-			this.owner.setupMouseOverAnim(text);
 			this.owner.setupMouseOverAnim(image);
 		}
 
@@ -85,14 +58,8 @@ export class MainMenuComponent {
 	}
 
 	updateMainMenuLayout(w: number, h: number, scale: number) {
-		for (var i = 0; i < this.statsText.length; i++) {
-			this.statsIcons[i]!.setPosition(w + (72 * scale), h + (((i - 2) * 48 + 8) * scale));
-			this.statsIcons[i]!.setScale(scale);
-
-			this.statsText[i]!.setPosition(w + (124 * scale), h + (((i - 2) * 48) * scale));
-			this.statsText[i]!.setScale(scale);
-
-			this.upgradeIcons[i]!.setPosition(w + ((120 + this.statsText[i]!.width) * scale), h + (((i - 2) * 48 + 8) * scale));
+		for (let i = 0; i < this.owner.statsText.length; i++) {
+			this.upgradeIcons[i]!.setPosition(w + ((120 + this.owner.statsText[i]!.width) * scale), h + (((i - 2) * 48 + 8) * scale));
 
 			if (this.upgradeIcons[i]!.scale != 0)
 				this.upgradeIcons[i]!.setScale(scale);
@@ -118,7 +85,7 @@ export class MainMenuComponent {
 		});
 	}
 
-	upgradeStat(name: String) {
+	upgradeStat(name: string) {
 		this.owner.scene.registry.set('money', this.owner.scene.registry.get('money') - this.owner.getLevel());
 
 		if (name == 'health')
@@ -140,19 +107,7 @@ export class MainMenuComponent {
 		const level = this.owner.getLevel();
 		const bShow = money >= level;
 
-		for (var i = 0; i < this.statsText.length; i++) {
-			let num = 0;
-			if (i == 0) 
-				num = this.owner.stats.attack;
-			else if (i == 1)
-				num = this.owner.stats.defence;
-			else if (i == 2) 
-				num = this.owner.stats.health;
-			else
-				num = this.owner.stats.speed;
-
-			this.statsText[i]!.setText(scene.abbrvNum(num));
-
+		for (let i = 0; i < this.owner.statsText.length; i++) {
 			this.upgradeIcons[i]!.setScale(bShow ? this.owner.storedScale : 0);
 		}
 
@@ -183,11 +138,11 @@ export class MainMenuComponent {
 	save() {
 		void (async () => {
 			try {
-				var aiList = [];
+				const aiList = [];
 				for (const element of this.owner.scene.wizards)
 					aiList.push(element.stats);
 
-				var payload = {
+				const payload = {
 					username: this.owner.scene.registry.get('username'),
 					money: this.owner.scene.registry.get('money'),
 					ai: aiList

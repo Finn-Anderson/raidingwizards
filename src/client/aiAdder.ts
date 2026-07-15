@@ -1,4 +1,4 @@
-import { Scene, GameObjects } from 'phaser';
+import * as Phaser from 'phaser';
 import { MainMenu } from './scenes/MainMenu';
 import { AI } from './ai/ai';
 
@@ -35,7 +35,7 @@ export class AIAdder {
 			.on('pointerover', () => { this.text.setTint(0xff5700); })
 			.on('pointerout', () => { this.text.clearTint(); })
 			.on('pointerup', () => { 
-				const currentMoney = scene.registry.get('money');
+				let currentMoney = scene.registry.get('money');
 				if (currentMoney < 10)
 					return;
 				
@@ -48,19 +48,20 @@ export class AIAdder {
 				this.costImg.destroy();
 				scene.buttons.splice(this.index - scene.wizards.length, 1);
 
-				scene.registry.set('money', currentMoney - 10);
+				currentMoney -= 10;
+				scene.registry.set('money', currentMoney);
 				scene.updateMoneyText();
 
 				scene.wizards.push(ai);
 				ai.MainMenuComponent.save();
 				
-				ai.MainMenuComponent.updateUpgradeDisplay();
+				ai.MainMenuComponent.updateUpgradeDisplay(scene, currentMoney);
 				scene.updateLayout(width, height);
 			});
 	}
 
 	updateLayout(width: number, height: number, scale: number) {
-		const x = this.index % 2 == 0 ? width / 4 : width / 2 + width / 4;
+		const x = this.index % 2 == 0 ? width / 4 + 48 * scale : width / 2 + width / 4 - 48 * scale;
 		const y = height / 4 + Math.floor(this.index / 2) * height / 4;
 
 		this.button.setDisplaySize(250 * scale, 250 * scale).updateDisplayOrigin();

@@ -47,5 +47,12 @@
 	},
 	"dev": {
 		"subreddit": "raidingwizards_dev"
+	},
+	"permissions": {
+		"reddit": {
+			"asUser": [
+				"SUBMIT_COMMENT"
+			]
+		}
 	}
 }

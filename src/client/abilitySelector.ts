@@ -1,3 +1,4 @@
+import * as Phaser from 'phaser';
 import { Ability } from "./ai/ability";
 import { AI } from "./ai/ai";
 import { HoverComponent } from "./ai/hoverComponent";
@@ -99,13 +100,13 @@ export class AbilitySelector {
 			this.abilityIndex = this.owner.stats.ability2Index;
 
 		this.owner.scene.registry.get('abilities').forEach((element: Ability, index: number) => {
-			let column = index - (Math.floor(index / 4) * 4);
-			let row = Math.floor(index / 4);
+			const column = index - (Math.floor(index / 4) * 4);
+			const row = Math.floor(index / 4);
 
-			let abilityX = x + 64 + 128 * column;
-			let abilityY = y + 128 + 128 * row;
+			const abilityX = x + 64 + 128 * column;
+			const abilityY = y + 128 + 128 * row;
 
-			let ability: {rectangle: Phaser.GameObjects.Rectangle, image: Phaser.GameObjects.Image, hoverComponent: HoverComponent} = element.display(this.owner, abilityX, abilityY, this.owner.storedScale, true);
+			const ability: {rectangle: Phaser.GameObjects.Rectangle, image: Phaser.GameObjects.Image, hoverComponent: HoverComponent} = element.display(this.owner, abilityX, abilityY, this.owner.storedScale, true);
 			ability.rectangle.setDepth(1);
 			ability.image.setDepth(1);
 
@@ -204,11 +205,11 @@ export class AbilitySelector {
 		this.descriptionText.setScale(scale);
 
 		this.abilities.forEach((element, index) => {
-			let column = index - (Math.floor(index / 4) * 4);
-			let row = Math.floor(index / 4);
+			const column = index - (Math.floor(index / 4) * 4);
+			const row = Math.floor(index / 4);
 
-			let x = w + (64 + 124 * column) * scale;
-			let y = h + (128 + 128 * row) * scale;
+			const x = w + (64 + 124 * column) * scale;
+			const y = h + (128 + 128 * row) * scale;
 
 			element.rectangle.setPosition(x, y);
 			element.rectangle.setScale(scale * 1.5);

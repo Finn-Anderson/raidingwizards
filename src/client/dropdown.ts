@@ -89,59 +89,61 @@ export class DropdownList {
 		});
 	}
 
-	async GetSubreddits() {
-		this.element.value = this.element.value.toLowerCase().substring(0, 21);
-		const value = this.button.innerHTML + this.element.value;
-		try {
-			var payload = {
-				value: value
-			};
-			const data = JSON.stringify( payload );
-					
-			const response = await fetch('/api/getsubreddits', { 
-				method: 'POST',
-				headers: {
-					'Accept': 'application/json',
-					'Content-Type': 'application/json'
-				},
-				body: data 
-			});
-			if (!response.ok)
-				throw new Error(`Failed to fetch subreddits: ${response.status}`);
+	GetSubreddits() {
+		void (async () => {
+			this.element.value = this.element.value.toLowerCase().substring(0, 21);
+			const value = this.button.innerHTML + this.element.value;
+			try {
+				const payload = {
+					value: value
+				};
+				const data = JSON.stringify( payload );
+						
+				const response = await fetch('/api/getsubreddits', { 
+					method: 'POST',
+					headers: {
+						'Accept': 'application/json',
+						'Content-Type': 'application/json'
+					},
+					body: data 
+				});
+				if (!response.ok)
+					throw new Error(`Failed to fetch subreddits: ${response.status}`);
 
-			const responseData = (await response.json()) as SubredditResponse;
-			const result = await responseData.list;
+				const responseData = (await response.json()) as SubredditResponse;
+				const result = await responseData.list;
 
-			if (document.activeElement != this.element)
-				return;
+				if (document.activeElement != this.element)
+					return;
 
-			this.container.innerHTML = '';
-			let bContainsSubreddit = false;
+				this.container.innerHTML = '';
+				let bContainsSubreddit = false;
 
-			for (var i = 0; i < (result.length > 5 ? 5 : result.length); i++) {
+				for (let i = 0; i < (result.length > 5 ? 5 : result.length); i++) {
+					const button = document.createElement('button');
+					button.classList.add('dropdown-button');
+					button.innerHTML = result.at(i)!.member + ' - <span id="score">' + result.at(i)!.score + '</span>';
+					button.value = result.at(i)!.member;
+					button.onclick = () => { this.setSubreddit(button.value) };
+					this.container.appendChild(button);
+
+					if (this.element.value == result.at(i)!.member.slice(2))
+						bContainsSubreddit = true;
+				}
+
+				if (bContainsSubreddit)
+					return;
+
 				const button = document.createElement('button');
 				button.classList.add('dropdown-button');
-				button.innerHTML = result.at(i)!.member + ' - <span id="score">' + result.at(i)!.score + '</span>';
-				button.value = result.at(i)!.member;
+				button.innerHTML = 'Add new';
+				button.value = value;
 				button.onclick = () => { this.setSubreddit(button.value) };
 				this.container.appendChild(button);
-
-				if (this.element.value == result.at(i)!.member.slice(2))
-					bContainsSubreddit = true;
+			} catch (error) {
+				console.error('Failed to search for subreddits:', error);
 			}
-
-			if (bContainsSubreddit)
-				return;
-
-			const button = document.createElement('button');
-			button.classList.add('dropdown-button');
-			button.innerHTML = 'Add new';
-			button.value = value;
-			button.onclick = () => { this.setSubreddit(button.value) };
-			this.container.appendChild(button);
-		} catch (error) {
-			console.error('Failed to search for subreddits:', error);
-		}
+		})();
 	}
 
 	updateLayout(w: number, h: number, scale: number) {
@@ -157,7 +159,7 @@ export class DropdownList {
 
 		void (async () => {
 			try {
-				var payload = {
+				const payload = {
 					username: this.scene.registry.get('username'),
 					subreddit: value
 				};

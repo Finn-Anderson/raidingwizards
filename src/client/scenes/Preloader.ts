@@ -75,8 +75,8 @@ export class Preloader extends Scene {
 				this.registry.set('level', 0);
 				this.registry.set('username', undefined);
 				this.registry.set('subreddit', undefined);
-				var aiArray = [];
-				for (var i = 0; i < 1; i++)
+				const aiArray = [];
+				for (let i = 0; i < 1; i++)
 					aiArray.push({health: 1, defence: 1, attack: 1, speed: 1})
 				this.registry.set('ai', aiArray);
 				this.registry.set('auto', false);
@@ -88,15 +88,15 @@ export class Preloader extends Scene {
 			}
 		})();
 
-		let abilities: Ability[] = [];
+		const abilities: Ability[] = [];
 		abilities.push(new Ability('Attack', 'attack', 'attack', 1, 1, 1));
 		abilities.push(new Ability('Multi-Attack', 'attack', 'multiAttack', 4, 1, 3));
 		abilities.push(new Ability('Weaken', 'attack', 'weaken', 4, 0, 1, 'weaken', 'Reduces enemy\'s defence by half (stacks) for 2 turns', 2));
 		abilities.push(new Ability('Riposte', 'defence', 'defence', 1, 0.5, 1));
 		abilities.push(new Ability('Taunt', 'defence', 'taunt', 4, 0, 1, 'taunt', 'Taunts enemy to target last taunter', 1));
-		abilities.push(new Ability('Heal', 'health', 'health', 1, 0.5, 1));
-		abilities.push(new Ability('Multi-Heal', 'health', 'multiHeal', 5, 1, 5));
-		abilities.push(new Ability('Revive', 'health', 'revive', 8, 5, 1));
+		abilities.push(new Ability('Heal', 'health', 'health', 1, 0.5, 1, '', 'Uses attack stat as heal amount'));
+		abilities.push(new Ability('Multi-Heal', 'health', 'multiHeal', 5, 1, 5, '', 'Uses attack stat as heal amount'));
+		abilities.push(new Ability('Revive', 'health', 'revive', 8, 5, 1, '', 'Uses attack stat as heal amount'));
 		abilities.push(new Ability('Slow', 'speed', 'slow', 4, 0, 1, 'slow', 'Halves enemy speed (does not stack) for 2 turns', 2));
 
 		this.registry.set('abilities', abilities);

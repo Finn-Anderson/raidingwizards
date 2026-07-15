@@ -15,6 +15,9 @@ export class AI extends Phaser.GameObjects.Sprite {
 	index: number = 0;
 	storedScale: number = 1;
 
+	statsIcons: Phaser.GameObjects.Image[] = [];
+	statsText: Phaser.GameObjects.Text[] = [];
+
 	MainMenuComponent: MainMenuComponent;
 	GameComponent: GameComponent;
 
@@ -50,6 +53,45 @@ export class AI extends Phaser.GameObjects.Sprite {
 			repeat: 0
 		});
 
+		for (let i = 0; i < 4; i++) {
+			let str: string;
+			let num: number;
+			if (i == 0) {
+				str = 'attack';
+				num = this.stats.attack;
+			}
+			else if (i == 1) {
+				str = 'defence';
+				num = this.stats.defence;
+			}
+			else if (i == 2) {
+				str = 'health';
+				num = this.stats.health;
+			}
+			else {
+				str = 'speed';
+				num = this.stats.speed;
+			}
+
+			const textImg = this.scene.add.image(4, 4, str).setOrigin(0).setInteractive();
+			this.statsIcons.push(textImg);
+
+			const text = this.scene.add
+				.text(4, 4, `${this.scene.abbrvNum(num)}`, {
+					fontFamily: '"Kristen ITC", arial, serif',
+					fontSize: 48,
+					color: '#ffffff',
+					stroke: '#f2f2f2',
+					strokeThickness: 2,
+				}).setOrigin(0).setInteractive();
+			this.statsText.push(text);
+
+			if (this.scene instanceof MainMenu) {
+				this.setupMouseOverAnim(textImg);
+				this.setupMouseOverAnim(text);
+			}
+		}
+
 		if (this.scene instanceof MainMenu) {
 			this.MainMenuComponent.createMainMenu();
 			this.setupMouseOverAnim(this);
@@ -58,6 +100,16 @@ export class AI extends Phaser.GameObjects.Sprite {
 			this.GameComponent.createGame(bEnemy);
 
 		this.setInteractive();
+
+		this.on('destroy', () => {
+			for (let i = this.statsText.length - 1; i > -1; i--) {
+				this.statsIcons[i]!.destroy();
+				this.statsText[i]!.destroy();
+
+				this.statsIcons.splice(i, 1);
+				this.statsText.splice(i, 1);
+			}
+		});
 	}
 
 	setupMouseOverAnim(element: Phaser.GameObjects.GameObject) {
@@ -75,12 +127,45 @@ export class AI extends Phaser.GameObjects.Sprite {
 		this.setPosition(w, h);
 		this.setScale(scale * 2);
 
+		for (let i = 0; i < this.statsText.length; i++) {
+			if (this.scene instanceof Game && this.scene.enemy == this) {
+				const x = i % 2 == 0 ? w - 50 * scale : w + 50 * scale;
+				const y = h + (this.height + Math.floor(i / 2) * 50) * scale;
+
+				this.statsIcons[i]!.setPosition(x - (i % 2 == 0 ? 52 * scale : 0), y + 8 * scale);
+				this.statsText[i]!.setPosition(x + (i % 2 == 0 ? 0 : 52 * scale), y);
+			}
+			else {
+				this.statsIcons[i]!.setPosition(w + 72 * scale, h + (((i - 2) * 48 + 8) * scale));
+				this.statsText[i]!.setPosition(w + 124 * scale, h + (((i - 2) * 48) * scale));
+			}
+
+			this.statsIcons[i]!.setScale(scale);
+			this.statsText[i]!.setScale(scale);
+		}
+
 		if (this.scene instanceof MainMenu)
 			this.MainMenuComponent.updateMainMenuLayout(w, h, scale);
 		else
 			this.GameComponent.updateGameLayout(w, h, scale, frameHeight);
 
 		this.storedScale = scale;
+	}
+
+	updateStatDisplay(scene: MainMenu) {
+		for (let i = 0; i < this.statsText.length; i++) {
+			let num: number;
+			if (i == 0) 
+				num = this.stats.attack;
+			else if (i == 1)
+				num = this.stats.defence;
+			else if (i == 2) 
+				num = this.stats.health;
+			else
+				num = this.stats.speed;
+
+			this.statsText[i]!.setText(scene.abbrvNum(num));
+		}
 	}
 
 	setStats(newStats: {health: number, defence: number, attack: number, speed: number, ability1Index: number, ability2Index: number}) {

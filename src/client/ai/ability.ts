@@ -37,7 +37,7 @@ export class Ability {
 	display(owner: AI, x: number, y: number, scale: number, customInteract: boolean = false, index: number = 1): {rectangle: Phaser.GameObjects.Rectangle, image: Phaser.GameObjects.Image, hoverComponent: HoverComponent} {
 		const hoverComponent = new HoverComponent(owner.scene, x, y, scale);
 
-		let tint = this.getTint();
+		const tint = this.getTint();
 
 		let size = 64;
 		if (owner.scene instanceof Game)
@@ -77,10 +77,14 @@ export class Ability {
 					owner.scene.selectedAbility = this;
 					owner.scene.tweens.killAll();
 					
-					let aiList: AI[] = [...owner.scene.wizards];
+					const aiList: AI[] = [...owner.scene.wizards];
 					aiList.push(owner.scene.enemy as AI);
 					aiList.forEach((element) => {
 						element.filters?.external.clear();
+
+						if (element.GameComponent.health == 0 && this.name != 'Revive')
+							return;
+
 						const glow = element.filters?.external.addGlow(tint, 0, 0, 1, false, 10, 8);
 
 						element.scene.tweens.add({
@@ -141,12 +145,12 @@ export class Ability {
 		scene.skipContainer!.setScale(0);
 		scene.skipImage!.setScale(0);
 
-		for (var i = targets.length - 1; i > -1; i--) {
+		for (let i = targets.length - 1; i > -1; i--) {
 			if ((this.type == 'health' && targets[i]!.GameComponent.health >= targets[i]!.GameComponent.maxHealth) || targets[i]!.GameComponent.health <= 0)
 				targets.splice(i, 1);
 		}
 
-		for (var i = 0; i < this.numProjectiles; i++) {
+		for (let i = 0; i < this.numProjectiles; i++) {
 			if (i != 0)
 				mainTarget = targets[Math.round(Math.random() * (targets.length - 1))] as AI;
 
@@ -174,7 +178,6 @@ export class Ability {
 				owner.setFrame(0);
 			}
 			
-			const scene: Game = owner.scene as Game;
 			const target: AI = mainTarget as AI;
 			if (target == scene.enemy && target.GameComponent.health <= 0)
 				scene.spawnEnemy();
@@ -184,7 +187,7 @@ export class Ability {
 	}
 
 	use(owner: AI, target: AI) {
-		let damage = 1;
+		let damage: number;
 		if (this.type == 'attack' || this.type == 'health')
 			damage = owner.stats.attack;
 		else if (this.type == 'defence')
@@ -202,21 +205,21 @@ export class Ability {
 			defence = defence / 2;
 		}
 
-		let finalDamage = (damage / defence) * damage;
-		if (this.type == 'health')
-			finalDamage = damage * -1;
-		
-		finalDamage = Number(finalDamage.toFixed(2));
-		if (finalDamage > 0)
-			finalDamage = Math.min(finalDamage, target.GameComponent.health);
-		else
-			finalDamage = Math.min(finalDamage, target.GameComponent.maxHealth - target.GameComponent.health);
+		if (this.type == 'health') {
+			damage = damage * -1;
+			damage = Math.min(damage, target.GameComponent.maxHealth - target.GameComponent.health);
+		}
+		else {
+			damage = (damage / defence) * damage;
+			damage = Math.min(damage, target.GameComponent.health);
+		}
 
-		target.GameComponent.takeHealth(finalDamage);
+		target.GameComponent.takeHealth(damage);
 
 		const scene = owner.scene as Game;
 		if (scene.enemy == target) {
-			scene.registry.set('damage', scene.registry.get('damage') + finalDamage);
+			const value = Math.round((Number(scene.registry.get('damage')) + damage + Number.EPSILON) * 100) / 100;
+			scene.registry.set('damage', value);
 			scene.updateDamageText();
 		}
 
